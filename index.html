@@ -2,37 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GlenoidApp - Circle Area Measurement</title>
+  <title>GlenoidApp - Area Measurement</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 20px;
-    }
-    canvas {
-      border: 1px solid #333;
-      margin-top: 10px;
-      cursor: crosshair;
-    }
-    button, input {
-      margin: 10px;
-      padding: 10px;
-    }
+    body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
+    canvas { border: 1px solid #333; margin-top: 10px; cursor: crosshair; }
+    button, input { margin: 10px; padding: 10px; }
   </style>
 </head>
 <body>
   <h1>GlenoidApp - Circle Area Measurement</h1>
-
   <input type="file" id="upload" accept="image/*">
   <br>
   <button id="lock">Lock Circle</button>
   <button id="reset">Reset Circle</button>
   <button id="resetLine">Reset Line</button>
   <button id="calculate">Calculate Area</button>
-
+  <div id="downloadArea" style="margin-top:10px;"></div>
   <p id="instruction">Draw a circle.</p>
   <p id="result"></p>
-
   <canvas id="canvas" width="800" height="600"></canvas>
 
   <script>
@@ -43,27 +30,18 @@
     const resetBtn = document.getElementById('reset');
     const resetLineBtn = document.getElementById('resetLine');
     const calculateBtn = document.getElementById('calculate');
+    const downloadArea = document.getElementById('downloadArea');
     const instruction = document.getElementById('instruction');
     const result = document.getElementById('result');
 
     let image = null;
-    let isDrawing = false;
-    let isCircleSet = false;
-    let isCircleLocked = false;
-    let isMovingCircle = false;
-    let isResizingCircle = false;
-    let isFreeDrawing = false;
-    let startX, startY;
-    let offsetX, offsetY;
-    let path = [];
-    let tempPath = [];
+    let isDrawing = false, isCircleSet = false, isCircleLocked = false;
+    let isMovingCircle = false, isResizingCircle = false, isFreeDrawing = false;
+    let startX, startY, offsetX, offsetY;
+    let path = [], tempPath = [];
+    let imgScale = 1, imgOffsetX = 0, imgOffsetY = 0;
 
-    let circle = {
-      x: 0,
-      y: 0,
-      radius: 0,
-      color: 'blue'
-    };
+    let circle = { x: 0, y: 0, radius: 0, color: 'blue' };
 
     upload.addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -72,6 +50,11 @@
       reader.onload = (event) => {
         image = new Image();
         image.onload = () => {
+          const scaleX = canvas.width / image.width;
+          const scaleY = canvas.height / image.height;
+          imgScale = Math.min(scaleX, scaleY);
+          imgOffsetX = (canvas.width - image.width * imgScale) / 2;
+          imgOffsetY = (canvas.height - image.height * imgScale) / 2;
           drawEverything();
         };
         image.src = event.target.result;
@@ -82,14 +65,12 @@
     function drawEverything(highlight = false) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (image) {
-        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, imgOffsetX, imgOffsetY, image.width * imgScale, image.height * imgScale);
       }
       if (highlight && tempPath.length > 0) {
         ctx.beginPath();
         ctx.moveTo(tempPath[0].x, tempPath[0].y);
-        for (let p of tempPath) {
-          ctx.lineTo(p.x, p.y);
-        }
+        for (let p of tempPath) ctx.lineTo(p.x, p.y);
         ctx.closePath();
         ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
         ctx.fill();
@@ -101,19 +82,6 @@
         ctx.lineWidth = 3;
         ctx.stroke();
       }
-    }
-
-    function isInsideCircle(x, y) {
-      const dx = x - circle.x;
-      const dy = y - circle.y;
-      return Math.sqrt(dx * dx + dy * dy) <= circle.radius;
-    }
-
-    function isNearEdge(x, y) {
-      const dx = x - circle.x;
-      const dy = y - circle.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return Math.abs(dist - circle.radius) <= 10;
     }
 
     function getAngle(x, y) {
@@ -136,8 +104,7 @@
     function findCrossings(path) {
       const crossings = [];
       for (let i = 1; i < path.length; i++) {
-        const p1 = path[i - 1];
-        const p2 = path[i];
+        const p1 = path[i - 1], p2 = path[i];
         const d1 = Math.hypot(p1.x - circle.x, p1.y - circle.y) - circle.radius;
         const d2 = Math.hypot(p2.x - circle.x, p2.y - circle.y) - circle.radius;
         if (d1 * d2 < 0) {
@@ -152,8 +119,7 @@
 
     canvas.addEventListener('mousedown', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
 
       if (!isCircleSet) {
         startX = x;
@@ -162,9 +128,9 @@
         isDrawing = true;
         drawEverything();
       } else if (isCircleSet && !isCircleLocked) {
-        if (isNearEdge(x, y)) {
+        if (Math.abs(Math.hypot(x - circle.x, y - circle.y) - circle.radius) <= 10) {
           isResizingCircle = true;
-        } else if (isInsideCircle(x, y)) {
+        } else if (Math.hypot(x - circle.x, y - circle.y) < circle.radius) {
           isMovingCircle = true;
           offsetX = x - circle.x;
           offsetY = y - circle.y;
@@ -179,29 +145,23 @@
 
     canvas.addEventListener('mousemove', (e) => {
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
 
       if (isDrawing && !isCircleSet) {
-        const dx = x - startX;
-        const dy = y - startY;
+        const dx = x - startX, dy = y - startY;
         circle.radius = Math.sqrt(dx * dx + dy * dy);
         drawEverything();
       }
-
       if (isMovingCircle && isCircleSet && !isCircleLocked) {
         circle.x = x - offsetX;
         circle.y = y - offsetY;
         drawEverything();
       }
-
       if (isResizingCircle && isCircleSet && !isCircleLocked) {
-        const dx = x - circle.x;
-        const dy = y - circle.y;
+        const dx = x - circle.x, dy = y - circle.y;
         circle.radius = Math.sqrt(dx * dx + dy * dy);
         drawEverything();
       }
-
       if (isFreeDrawing) {
         ctx.lineTo(x, y);
         ctx.strokeStyle = 'blue';
@@ -240,6 +200,7 @@
       isCircleLocked = false;
       instruction.textContent = 'Draw a circle.';
       lockBtn.style.backgroundColor = '';
+      downloadArea.innerHTML = '';
       drawEverything();
     });
 
@@ -256,9 +217,8 @@
       }
 
       const crossings = findCrossings(path);
-
       if (crossings.length !== 2) {
-        result.textContent = 'Fracture line must cross the circle exactly two times!';
+        result.textContent = 'Fracture line must cross exactly twice!';
         return;
       }
 
@@ -271,11 +231,9 @@
 
       const startAngle = getAngle(crossings[1].x, crossings[1].y);
       const endAngle = getAngle(crossings[0].x, crossings[0].y);
-
       const arcPoints = generateArcPoints(startAngle, endAngle);
 
       tempPath = tempPath.concat(arcPoints);
-
       drawEverything(true);
 
       const fullCircleArea = Math.PI * circle.radius * circle.radius;
@@ -283,41 +241,53 @@
       offscreen.width = canvas.width;
       offscreen.height = canvas.height;
       const offctx = offscreen.getContext('2d');
-
       offctx.beginPath();
       offctx.moveTo(tempPath[0].x, tempPath[0].y);
-      for (let p of tempPath) {
-        offctx.lineTo(p.x, p.y);
-      }
+      for (let p of tempPath) offctx.lineTo(p.x, p.y);
       offctx.closePath();
       offctx.fill();
 
       const imgData = offctx.getImageData(0, 0, canvas.width, canvas.height);
       const pixels = imgData.data;
 
-      let fracturePixels = 0;
-      let totalPixels = 0;
-
+      let fracturePixels = 0, totalPixels = 0;
       for (let y = 0; y < canvas.height; y++) {
         for (let x = 0; x < canvas.width; x++) {
           const i = (y * canvas.width + x) * 4;
-          const dx = x - circle.x;
-          const dy = y - circle.y;
-          if (Math.sqrt(dx * dx + dy * dy) <= circle.radius) {
+          const dx = x - circle.x, dy = y - circle.y;
+          if (Math.hypot(dx, dy) <= circle.radius) {
             totalPixels++;
-            if (pixels[i + 3] > 0) {
-              fracturePixels++;
-            }
+            if (pixels[i + 3] > 0) fracturePixels++;
           }
         }
       }
 
       let percentage = (fracturePixels / totalPixels) * 100;
-      if (percentage > 50) {
-        percentage = 100 - percentage;
-      }
-
+      if (percentage > 50) percentage = 100 - percentage;
       result.textContent = `Fracture area: ${percentage.toFixed(1)}% of circle surface.`;
+
+      const now = new Date();
+      const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
+
+      downloadArea.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.textContent = 'Download Result';
+      btn.onclick = () => {
+        drawEverything(true);
+        ctx.fillStyle = 'white';
+        ctx.fillRect(5, 5, 200, 50);
+        ctx.fillStyle = 'black';
+        ctx.font = '16px Arial';
+        ctx.fillText(dateStr, 10, 25);
+        ctx.fillText(`Fracture: ${percentage.toFixed(1)}%`, 10, 45);
+
+        const link = document.createElement('a');
+        link.download = 'fracture-measurement.png';
+        link.href = canvas.toDataURL();
+        link.click();
+        drawEverything(true);
+      };
+      downloadArea.appendChild(btn);
     });
   </script>
 </body>
