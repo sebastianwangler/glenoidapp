@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GlenoidApp - Circle Area Measurement</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 20px;
+    }
+    canvas {
+      border: 1px solid #333;
+      margin-top: 10px;
+      cursor: crosshair;
+    }
+    button, input {
+      margin: 10px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>GlenoidApp - Circle Area Measurement</h1>
+
+  <input type="file" id="upload" accept="image/*">
+  <br>
+  <button id="lock">Lock Circle</button>
+  <button id="reset">Reset Circle</button>
+  <button id="resetLine">Reset Line</button>
+  <button id="calculate">Calculate Area</button>
+
+  <p id="instruction">Draw a circle.</p>
+  <p id="result"></p>
+
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const upload = document.getElementById('upload');
+    const lockBtn = document.getElementById('lock');
+    const resetBtn = document.getElementById('reset');
+    const resetLineBtn = document.getElementById('resetLine');
+    const calculateBtn = document.getElementById('calculate');
+    const instruction = document.getElementById('instruction');
+    const result = document.getElementById('result');
+
+    let image = null;
+    let isDrawing = false;
+    let isCircleSet = false;
+    let isCircleLocked = false;
+    let isMovingCircle = false;
+    let isResizingCircle = false;
+    let isFreeDrawing = false;
+    let startX, startY;
+    let offsetX, offsetY;
+    let path = [];
+    let tempPath = [];
+
+    let circle = {
+      x: 0,
+      y: 0,
+      radius: 0,
+      color: 'blue'
+    };
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        image = new Image();
+        image.onload = () => {
+          drawEverything();
+        };
+        image.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function drawEverything(highlight = false) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (image) {
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+      }
+      if (highlight && tempPath.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(tempPath[0].x, tempPath[0].y);
+        for (let p of tempPath) {
+          ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(0, 0, 255, 0.3)';
+        ctx.fill();
+      }
+      if (isCircleSet || isDrawing) {
+        ctx.beginPath();
+        ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = circle.color;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+
+    function isInsideCircle(x, y) {
+      const dx = x - circle.x;
+      const dy = y - circle.y;
+      return Math.sqrt(dx * dx + dy * dy) <= circle.radius;
+    }
+
+    function isNearEdge(x, y) {
+      const dx = x - circle.x;
+      const dy = y - circle.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return Math.abs(dist - circle.radius) <= 10;
+    }
+
+    function getAngle(x, y) {
+      return Math.atan2(y - circle.y, x - circle.x);
+    }
+
+    function generateArcPoints(startAngle, endAngle, steps = 100) {
+      const points = [];
+      if (endAngle < startAngle) endAngle += Math.PI * 2;
+      for (let i = 0; i <= steps; i++) {
+        const angle = startAngle + (endAngle - startAngle) * (i / steps);
+        points.push({
+          x: circle.x + circle.radius * Math.cos(angle),
+          y: circle.y + circle.radius * Math.sin(angle)
+        });
+      }
+      return points;
+    }
+
+    function findCrossings(path) {
+      const crossings = [];
+      for (let i = 1; i < path.length; i++) {
+        const p1 = path[i - 1];
+        const p2 = path[i];
+        const d1 = Math.hypot(p1.x - circle.x, p1.y - circle.y) - circle.radius;
+        const d2 = Math.hypot(p2.x - circle.x, p2.y - circle.y) - circle.radius;
+        if (d1 * d2 < 0) {
+          const t = d1 / (d1 - d2);
+          const cx = p1.x + (p2.x - p1.x) * t;
+          const cy = p1.y + (p2.y - p1.y) * t;
+          crossings.push({x: cx, y: cy, index: i});
+        }
+      }
+      return crossings;
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (!isCircleSet) {
+        startX = x;
+        startY = y;
+        circle = { x: startX, y: startY, radius: 0, color: 'blue' };
+        isDrawing = true;
+        drawEverything();
+      } else if (isCircleSet && !isCircleLocked) {
+        if (isNearEdge(x, y)) {
+          isResizingCircle = true;
+        } else if (isInsideCircle(x, y)) {
+          isMovingCircle = true;
+          offsetX = x - circle.x;
+          offsetY = y - circle.y;
+        }
+      } else if (isCircleLocked) {
+        isFreeDrawing = true;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        path = [{x, y}];
+      }
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (isDrawing && !isCircleSet) {
+        const dx = x - startX;
+        const dy = y - startY;
+        circle.radius = Math.sqrt(dx * dx + dy * dy);
+        drawEverything();
+      }
+
+      if (isMovingCircle && isCircleSet && !isCircleLocked) {
+        circle.x = x - offsetX;
+        circle.y = y - offsetY;
+        drawEverything();
+      }
+
+      if (isResizingCircle && isCircleSet && !isCircleLocked) {
+        const dx = x - circle.x;
+        const dy = y - circle.y;
+        circle.radius = Math.sqrt(dx * dx + dy * dy);
+        drawEverything();
+      }
+
+      if (isFreeDrawing) {
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = 'blue';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        path.push({x, y});
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      if (isDrawing && !isCircleSet) {
+        isDrawing = false;
+        isCircleSet = true;
+        drawEverything();
+      }
+      isMovingCircle = false;
+      isResizingCircle = false;
+      isFreeDrawing = false;
+    });
+
+    lockBtn.addEventListener('click', () => {
+      if (isCircleSet && !isCircleLocked) {
+        isCircleLocked = true;
+        circle.color = 'rgba(255, 100, 100, 0.8)';
+        instruction.textContent = 'Draw the fracture line.';
+        lockBtn.style.backgroundColor = 'rgba(255, 100, 100, 0.8)';
+        drawEverything();
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      path = [];
+      tempPath = [];
+      circle = {x: 0, y: 0, radius: 0, color: 'blue'};
+      isCircleSet = false;
+      isCircleLocked = false;
+      instruction.textContent = 'Draw a circle.';
+      lockBtn.style.backgroundColor = '';
+      drawEverything();
+    });
+
+    resetLineBtn.addEventListener('click', () => {
+      path = [];
+      tempPath = [];
+      drawEverything();
+    });
+
+    calculateBtn.addEventListener('click', () => {
+      if (path.length === 0 || !isCircleLocked) {
+        result.textContent = 'Please lock the circle and draw a fracture line first!';
+        return;
+      }
+
+      const crossings = findCrossings(path);
+
+      if (crossings.length !== 2) {
+        result.textContent = 'Fracture line must cross the circle exactly two times!';
+        return;
+      }
+
+      tempPath = [];
+      tempPath.push(crossings[0]);
+      for (let i = crossings[0].index; i <= crossings[1].index; i++) {
+        tempPath.push(path[i]);
+      }
+      tempPath.push(crossings[1]);
+
+      const startAngle = getAngle(crossings[1].x, crossings[1].y);
+      const endAngle = getAngle(crossings[0].x, crossings[0].y);
+
+      const arcPoints = generateArcPoints(startAngle, endAngle);
+
+      tempPath = tempPath.concat(arcPoints);
+
+      drawEverything(true);
+
+      const fullCircleArea = Math.PI * circle.radius * circle.radius;
+      const offscreen = document.createElement('canvas');
+      offscreen.width = canvas.width;
+      offscreen.height = canvas.height;
+      const offctx = offscreen.getContext('2d');
+
+      offctx.beginPath();
+      offctx.moveTo(tempPath[0].x, tempPath[0].y);
+      for (let p of tempPath) {
+        offctx.lineTo(p.x, p.y);
+      }
+      offctx.closePath();
+      offctx.fill();
+
+      const imgData = offctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = imgData.data;
+
+      let fracturePixels = 0;
+      let totalPixels = 0;
+
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          const dx = x - circle.x;
+          const dy = y - circle.y;
+          if (Math.sqrt(dx * dx + dy * dy) <= circle.radius) {
+            totalPixels++;
+            if (pixels[i + 3] > 0) {
+              fracturePixels++;
+            }
+          }
+        }
+      }
+
+      let percentage = (fracturePixels / totalPixels) * 100;
+      if (percentage > 50) {
+        percentage = 100 - percentage;
+      }
+
+      result.textContent = `Fracture area: ${percentage.toFixed(1)}% of circle surface.`;
+    });
+  </script>
+</body>
+</html>
