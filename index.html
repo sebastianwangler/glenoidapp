@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>GlenoidApp - Area Measurement</title>
+  <title>GlenoidApp - Circle Area Measurement</title>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; margin-top: 20px; }
     canvas { border: 1px solid #333; margin-top: 10px; cursor: crosshair; }
@@ -12,6 +12,8 @@
 <body>
   <h1>GlenoidApp - Circle Area Measurement</h1>
   <input type="file" id="upload" accept="image/*">
+  <br>
+  <input type="text" id="patientId" placeholder="Patient ID" style="padding: 8px; margin: 10px;">
   <br>
   <button id="lock">Lock Circle</button>
   <button id="reset">Reset Circle</button>
@@ -26,6 +28,7 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
     const upload = document.getElementById('upload');
+    const patientIdInput = document.getElementById('patientId');
     const lockBtn = document.getElementById('lock');
     const resetBtn = document.getElementById('reset');
     const resetLineBtn = document.getElementById('resetLine');
@@ -88,11 +91,14 @@
       return Math.atan2(y - circle.y, x - circle.x);
     }
 
-    function generateArcPoints(startAngle, endAngle, steps = 100) {
+    function generateArcPoints(startAngle, endAngle, steps = 100, reverse = false) {
       const points = [];
-      if (endAngle < startAngle) endAngle += Math.PI * 2;
+      if (!reverse && endAngle < startAngle) endAngle += Math.PI * 2;
+      if (reverse && startAngle < endAngle) startAngle += Math.PI * 2;
       for (let i = 0; i <= steps; i++) {
-        const angle = startAngle + (endAngle - startAngle) * (i / steps);
+        const angle = reverse
+          ? startAngle - (startAngle - endAngle) * (i / steps)
+          : startAngle + (endAngle - startAngle) * (i / steps);
         points.push({
           x: circle.x + circle.radius * Math.cos(angle),
           y: circle.y + circle.radius * Math.sin(angle)
@@ -229,11 +235,12 @@
       }
       tempPath.push(crossings[1]);
 
-      const startAngle = getAngle(crossings[1].x, crossings[1].y);
-      const endAngle = getAngle(crossings[0].x, crossings[0].y);
-      const arcPoints = generateArcPoints(startAngle, endAngle);
+      let startAngle = getAngle(crossings[1].x, crossings[1].y);
+      let endAngle = getAngle(crossings[0].x, crossings[0].y);
 
+      let arcPoints = generateArcPoints(startAngle, endAngle);
       tempPath = tempPath.concat(arcPoints);
+
       drawEverything(true);
 
       const fullCircleArea = Math.PI * circle.radius * circle.radius;
@@ -263,8 +270,27 @@
       }
 
       let percentage = (fracturePixels / totalPixels) * 100;
-      if (percentage > 50) percentage = 100 - percentage;
+      let reverseArc = false;
+      if (percentage > 50) {
+        percentage = 100 - percentage;
+        reverseArc = true;
+      }
+
       result.textContent = `Fracture area: ${percentage.toFixed(1)}% of circle surface.`;
+
+      if (reverseArc) {
+        tempPath = [];
+        tempPath.push(crossings[1]);
+        for (let i = crossings[1].index; i >= crossings[0].index; i--) {
+          tempPath.push(path[i]);
+        }
+        tempPath.push(crossings[0]);
+        startAngle = getAngle(crossings[0].x, crossings[0].y);
+        endAngle = getAngle(crossings[1].x, crossings[1].y);
+        arcPoints = generateArcPoints(startAngle, endAngle, 100, true);
+        tempPath = tempPath.concat(arcPoints);
+        drawEverything(true);
+      }
 
       const now = new Date();
       const dateStr = `${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}.${now.getFullYear()}`;
@@ -275,11 +301,12 @@
       btn.onclick = () => {
         drawEverything(true);
         ctx.fillStyle = 'white';
-        ctx.fillRect(5, 5, 200, 50);
+        ctx.fillRect(5, 5, 250, 70);
         ctx.fillStyle = 'black';
         ctx.font = '16px Arial';
         ctx.fillText(dateStr, 10, 25);
         ctx.fillText(`Fracture: ${percentage.toFixed(1)}%`, 10, 45);
+        ctx.fillText(`ID: ${patientIdInput.value}`, 10, 65);
 
         const link = document.createElement('a');
         link.download = 'fracture-measurement.png';
