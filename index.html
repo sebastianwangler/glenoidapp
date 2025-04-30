@@ -108,7 +108,7 @@ let ctx = canvas.getContext('2d');
         ctx.beginPath();
         ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
         ctx.strokeStyle = circle.color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = 3 / scale;
         ctx.stroke();
       }
 
@@ -119,7 +119,7 @@ let ctx = canvas.getContext('2d');
           ctx.lineTo(path[i].x, path[i].y);
         }
         ctx.strokeStyle = 'blue';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2 / scale;
         ctx.stroke();
       }
 
