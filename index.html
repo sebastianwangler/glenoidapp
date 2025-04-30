@@ -9,13 +9,12 @@
       font-family: Arial, sans-serif;
       text-align: center;
       margin-top: 20px;
-      touch-action: none;
     }
     canvas {
       border: 1px solid #333;
       margin-top: 10px;
-      touch-action: none;
       background-color: white;
+      touch-action: none;
     }
     button, input {
       margin: 10px;
@@ -27,7 +26,6 @@
   <h1>GlenoidApp - Circle Area Measurement</h1>
 
   <input type="file" id="upload" accept="image/*" /><br />
-
   <input type="text" id="patientId" placeholder="Patient ID" style="padding: 8px; margin: 10px" /><br />
 
   <button id="lock">Lock Circle</button>
@@ -110,10 +108,94 @@ function getCanvasCoords(e) {
     y: (clientY - rect.top - panY) / scale
   };
 }
-// ⬅ Add this directly after Part 3
+
+upload.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    image = new Image();
+    image.onload = () => {
+      scale = canvas.width / image.width;
+      panX = (canvas.width - image.width * scale) / 2;
+      panY = (canvas.height - image.height * scale) / 2;
+      circle = { x: image.width / 2, y: image.height / 2, radius: 100, color: 'blue' };
+      isCircleSet = true;
+      isCircleLocked = false;
+      path = [];
+      tempPath = [];
+      instruction.textContent = 'Adjust the circle, then lock it.';
+      drawEverything();
+    };
+    image.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+canvas.addEventListener('wheel', e => {
+  const zoom = e.deltaY < 0 ? 1.1 : 0.9;
+  const mouseX = (e.clientX - canvas.getBoundingClientRect().left - panX) / scale;
+  const mouseY = (e.clientY - canvas.getBoundingClientRect().top - panY) / scale;
+  scale *= zoom;
+  panX = e.clientX - mouseX * scale;
+  panY = e.clientY - mouseY * scale;
+  drawEverything();
+});
+canvas.addEventListener('mousedown', e => {
+  const pos = getCanvasCoords(e);
+  if (!isCircleLocked) {
+    const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    if (Math.abs(d - circle.radius) < 10) isResizingCircle = true;
+    else if (d < circle.radius) {
+      isMovingCircle = true;
+      offsetX = pos.x - circle.x;
+      offsetY = pos.y - circle.y;
+    } else {
+      isPanning = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    }
+  } else {
+    isFreeDrawing = true;
+    path = [pos];
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getCanvasCoords(e);
+  if (isMovingCircle) {
+    circle.x = pos.x - offsetX;
+    circle.y = pos.y - offsetY;
+    drawEverything();
+  }
+  if (isResizingCircle) {
+    circle.radius = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    drawEverything();
+  }
+  if (isFreeDrawing) {
+    path.push(pos);
+    drawEverything();
+  }
+  if (isPanning) {
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    panX += dx;
+    panY += dy;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    drawEverything();
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  isMovingCircle = false;
+  isResizingCircle = false;
+  isFreeDrawing = false;
+  isPanning = false;
+});
 
 canvas.addEventListener('touchstart', e => {
-  if (e.touches.length > 1) return; // block drawing while pinching
+  if (e.touches.length > 1) return;
   const pos = getCanvasCoords(e);
   if (!isCircleLocked) {
     const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
@@ -151,6 +233,16 @@ canvas.addEventListener('touchend', () => {
   isMovingCircle = false;
   isResizingCircle = false;
   isFreeDrawing = false;
+});
+
+lockBtn.addEventListener('click', () => {
+  if (isCircleSet && !isCircleLocked) {
+    isCircleLocked = true;
+    circle.color = 'rgba(255,100,100,0.8)';
+    instruction.textContent = 'Draw the fracture line.';
+    lockBtn.style.backgroundColor = 'rgba(255,100,100,0.8)';
+    drawEverything();
+  }
 });
 
 resetBtn.addEventListener('click', () => {
@@ -238,10 +330,6 @@ calculateBtn.addEventListener('click', () => {
     return full;
   }
 
-  // try both paths and measure
-  let normalPath = buildPath(false);
-  let reversePath = buildPath(true);
-
   function measure(pathPoints) {
     const testCanvas = document.createElement('canvas');
     testCanvas.width = canvas.width;
@@ -267,9 +355,9 @@ calculateBtn.addEventListener('click', () => {
     return { percent: selected / total * 100, pathPoints };
   }
 
-  const m1 = measure(normalPath);
-  const m2 = measure(reversePath);
-  const best = m1.percent <= 50 ? m1 : { percent: 100 - m2.percent, pathPoints: m2.pathPoints };
+  const m1 = measure(buildPath(false));
+  const m2 = measure(buildPath(true));
+  const best = m1.percent <= 50 ? m1 : { percent: 100 - m2.percent, pathPoints: buildPath(true) };
 
   tempPath = best.pathPoints;
   drawEverything(true);
