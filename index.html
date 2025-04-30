@@ -46,11 +46,13 @@
   <p id="instruction">Upload an image to begin.</p>
   <p id="result"></p>
 
-  <canvas id="canvas" width="800" height="600"></canvas>
+  <canvas id="canvas"></canvas>
 
   <script>
     const canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth * 0.95;
+canvas.height = window.innerHeight * 0.6;
+let ctx = canvas.getContext('2d');
     const upload = document.getElementById('upload');
     const patientIdInput = document.getElementById('patientId');
     const lockBtn = document.getElementById('lock');
