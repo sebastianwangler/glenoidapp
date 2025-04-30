@@ -123,250 +123,265 @@
 
       ctx.restore();
     }
+  upload.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    image = new Image();
+    image.onload = () => {
+      const scaleX = canvas.width / image.width;
+      const scaleY = canvas.height / image.height;
+      scale = Math.min(scaleX, scaleY);
+      panX = (canvas.width - image.width * scale) / 2;
+      panY = (canvas.height - image.height * scale) / 2;
 
-    function getCanvasCoords(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: (clientX - rect.left - panX) / scale,
-        y: (clientY - rect.top - panY) / scale
-      };
-    }
-
-    upload.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = evt => {
-        image = new Image();
-        image.onload = () => {
-          const scaleX = canvas.width / image.width;
-          const scaleY = canvas.height / image.height;
-          scale = Math.min(scaleX, scaleY);
-          panX = (canvas.width - image.width * scale) / 2;
-          panY = (canvas.height - image.height * scale) / 2;
-
-          circle = { x: image.width / 2, y: image.height / 2, radius: 100, color: 'blue' };
-          isCircleSet = true;
-          isCircleLocked = false;
-          path = [];
-          tempPath = [];
-          instruction.textContent = 'Adjust the circle, then lock it.';
-          drawEverything();
-        };
-        image.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    canvas.addEventListener('mousedown', e => {
-      const pos = getCanvasCoords(e);
-      if (!isCircleLocked) {
-        const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
-        if (Math.abs(d - circle.radius) < 10) isResizingCircle = true;
-        else if (d < circle.radius) {
-          isMovingCircle = true;
-          offsetX = pos.x - circle.x;
-          offsetY = pos.y - circle.y;
-        }
-      } else {
-        isFreeDrawing = true;
-        path = [pos];
-      }
-    });
-
-    canvas.addEventListener('mousemove', e => {
-      const pos = getCanvasCoords(e);
-      if (isMovingCircle) {
-        circle.x = pos.x - offsetX;
-        circle.y = pos.y - offsetY;
-        drawEverything();
-      }
-      if (isResizingCircle) {
-        circle.radius = Math.hypot(pos.x - circle.x, pos.y - circle.y);
-        drawEverything();
-      }
-      if (isFreeDrawing) {
-        path.push(pos);
-        drawEverything();
-      }
-    });
-
-    canvas.addEventListener('mouseup', () => {
-      isMovingCircle = false;
-      isResizingCircle = false;
-      isFreeDrawing = false;
-    });
-
-    lockBtn.addEventListener('click', () => {
-      if (isCircleSet && !isCircleLocked) {
-        isCircleLocked = true;
-        circle.color = 'rgba(255,100,100,0.8)';
-        instruction.textContent = 'Draw the fracture line.';
-        lockBtn.style.backgroundColor = 'rgba(255,100,100,0.8)';
-        drawEverything();
-      }
-    });
-
-    resetBtn.addEventListener('click', () => {
-      path = [];
-      tempPath = [];
-      isCircleSet = false;
+      circle = { x: image.width / 2, y: image.height / 2, radius: 100, color: 'blue' };
+      isCircleSet = true;
       isCircleLocked = false;
-      circle = { x: 400, y: 300, radius: 100, color: 'blue' };
-      instruction.textContent = 'Upload an image to begin.';
-      lockBtn.style.backgroundColor = '';
-      downloadArea.innerHTML = '';
-      drawEverything();
-    });
-
-    resetLineBtn.addEventListener('click', () => {
       path = [];
       tempPath = [];
+      instruction.textContent = 'Adjust the circle, then lock it.';
       drawEverything();
-    });
+    };
+    image.src = evt.target.result;
+  };
+  reader.readAsDataURL(file);
+});
 
-    calculateBtn.addEventListener('click', () => {
-      if (path.length < 2 || !isCircleLocked) {
-        result.textContent = 'Please lock circle and draw fracture line first.';
-        return;
+lockBtn.addEventListener('click', () => {
+  if (isCircleSet && !isCircleLocked) {
+    isCircleLocked = true;
+    circle.color = 'rgba(255,100,100,0.8)';
+    instruction.textContent = 'Draw the fracture line.';
+    lockBtn.style.backgroundColor = 'rgba(255,100,100,0.8)';
+    drawEverything();
+  }
+});
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getCanvasCoords(e);
+  if (!isCircleLocked) {
+    const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    if (Math.abs(d - circle.radius) < 10) isResizingCircle = true;
+    else if (d < circle.radius) {
+      isMovingCircle = true;
+      offsetX = pos.x - circle.x;
+      offsetY = pos.y - circle.y;
+    }
+  } else {
+    isFreeDrawing = true;
+    path = [pos];
+  }
+});
+
+canvas.addEventListener('touchstart', e => {
+  if (e.touches.length > 1) return;
+  const pos = getCanvasCoords(e);
+  if (!isCircleLocked) {
+    const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    if (Math.abs(d - circle.radius) < 10) isResizingCircle = true;
+    else if (d < circle.radius) {
+      isMovingCircle = true;
+      offsetX = pos.x - circle.x;
+      offsetY = pos.y - circle.y;
+    }
+  } else {
+    isFreeDrawing = true;
+    path = [pos];
+  }
+}, { passive: false });
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getCanvasCoords(e);
+  if (isMovingCircle) {
+    circle.x = pos.x - offsetX;
+    circle.y = pos.y - offsetY;
+    drawEverything();
+  }
+  if (isResizingCircle) {
+    circle.radius = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    drawEverything();
+  }
+  if (isFreeDrawing) {
+    path.push(pos);
+    drawEverything();
+  }
+});
+
+canvas.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) return;
+  const pos = getCanvasCoords(e);
+  if (isMovingCircle) {
+    circle.x = pos.x - offsetX;
+    circle.y = pos.y - offsetY;
+    drawEverything();
+  }
+  if (isResizingCircle) {
+    circle.radius = Math.hypot(pos.x - circle.x, pos.y - circle.y);
+    drawEverything();
+  }
+  if (isFreeDrawing) {
+    path.push(pos);
+    drawEverything();
+  }
+}, { passive: false });
+
+canvas.addEventListener('mouseup', () => {
+  isMovingCircle = false;
+  isResizingCircle = false;
+  isFreeDrawing = false;
+});
+
+canvas.addEventListener('touchend', () => {
+  isMovingCircle = false;
+  isResizingCircle = false;
+  isFreeDrawing = false;
+});
+
+function getCanvasCoords(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left - panX) / scale,
+    y: (clientY - rect.top - panY) / scale
+  };
+}
+calculateBtn.addEventListener('click', () => {
+  if (path.length < 2 || !isCircleLocked) {
+    result.textContent = 'Please lock circle and draw fracture line first.';
+    return;
+  }
+
+  function findCrossings() {
+    const crossings = [];
+    for (let i = 1; i < path.length; i++) {
+      const d1 = Math.hypot(path[i-1].x - circle.x, path[i-1].y - circle.y) - circle.radius;
+      const d2 = Math.hypot(path[i].x - circle.x, path[i].y - circle.y) - circle.radius;
+      if (d1 * d2 < 0) {
+        const t = d1 / (d1 - d2);
+        const cx = path[i-1].x + (path[i].x - path[i-1].x) * t;
+        const cy = path[i-1].y + (path[i].y - path[i-1].y) * t;
+        crossings.push({ x: cx, y: cy, index: i });
       }
+    }
+    return crossings;
+  }
 
-      function findCrossings() {
-        const crossings = [];
-        for (let i = 1; i < path.length; i++) {
-          const d1 = Math.hypot(path[i-1].x - circle.x, path[i-1].y - circle.y) - circle.radius;
-          const d2 = Math.hypot(path[i].x - circle.x, path[i].y - circle.y) - circle.radius;
-          if (d1 * d2 < 0) {
-            const t = d1 / (d1 - d2);
-            const cx = path[i-1].x + (path[i].x - path[i-1].x) * t;
-            const cy = path[i-1].y + (path[i].y - path[i-1].y) * t;
-            crossings.push({ x: cx, y: cy, index: i });
-          }
+  const crossings = findCrossings();
+  if (crossings.length !== 2) {
+    result.textContent = 'Fracture line must cross circle exactly twice.';
+    return;
+  }
+
+  function angle(p) {
+    return Math.atan2(p.y - circle.y, p.x - circle.x);
+  }
+
+  function arcPoints(a1, a2, reverse = false, steps = 100) {
+    const points = [];
+    if (!reverse && a2 < a1) a2 += Math.PI * 2;
+    if (reverse && a1 < a2) a1 += Math.PI * 2;
+    for (let i = 0; i <= steps; i++) {
+      const angle = reverse
+        ? a1 - ((a1 - a2) * i) / steps
+        : a1 + ((a2 - a1) * i) / steps;
+      points.push({
+        x: circle.x + circle.radius * Math.cos(angle),
+        y: circle.y + circle.radius * Math.sin(angle)
+      });
+    }
+    return points;
+  }
+
+  function buildPath(reverse = false) {
+    let a1, a2, full = [];
+    if (!reverse) {
+      a1 = angle(crossings[1]);
+      a2 = angle(crossings[0]);
+      full.push(crossings[0]);
+      for (let i = crossings[0].index; i <= crossings[1].index; i++) full.push(path[i]);
+      full.push(crossings[1]);
+      full = full.concat(arcPoints(a1, a2));
+    } else {
+      a1 = angle(crossings[0]);
+      a2 = angle(crossings[1]);
+      full.push(crossings[1]);
+      for (let i = crossings[1].index; i >= crossings[0].index; i--) full.push(path[i]);
+      full.push(crossings[0]);
+      full = full.concat(arcPoints(a1, a2, true));
+    }
+    return full;
+  }
+
+  function measure(pathPoints) {
+    const testCanvas = document.createElement('canvas');
+    testCanvas.width = canvas.width;
+    testCanvas.height = canvas.height;
+    const ctx2 = testCanvas.getContext('2d');
+    ctx2.beginPath();
+    ctx2.moveTo(pathPoints[0].x * scale + panX, pathPoints[0].y * scale + panY);
+    for (let p of pathPoints) ctx2.lineTo(p.x * scale + panX, p.y * scale + panY);
+    ctx2.closePath();
+    ctx2.fill();
+    const data = ctx2.getImageData(0, 0, canvas.width, canvas.height).data;
+    let total = 0, selected = 0;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        const dx = (x - panX) / scale - circle.x;
+        const dy = (y - panY) / scale - circle.y;
+        if (Math.hypot(dx, dy) <= circle.radius) {
+          total++;
+          if (data[(y * canvas.width + x) * 4 + 3] > 0) selected++;
         }
-        return crossings;
       }
+    }
+    return { percent: selected / total * 100, pathPoints };
+  }
 
-      const crossings = findCrossings();
-      if (crossings.length !== 2) {
-        result.textContent = 'Fracture line must cross circle exactly twice.';
-        return;
-      }
+  const forwardPath = buildPath(false);
+  const reversePath = buildPath(true);
 
-      function angle(p) {
-        return Math.atan2(p.y - circle.y, p.x - circle.x);
-      }
+  const m1 = measure(forwardPath);
+  const m2 = measure(reversePath);
 
-      function arcPoints(a1, a2, reverse = false, steps = 100) {
-        const points = [];
-        if (!reverse && a2 < a1) a2 += Math.PI * 2;
-        if (reverse && a1 < a2) a1 += Math.PI * 2;
-        for (let i = 0; i <= steps; i++) {
-          const angle = reverse
-            ? a1 - ((a1 - a2) * i) / steps
-            : a1 + ((a2 - a1) * i) / steps;
-          points.push({
-            x: circle.x + circle.radius * Math.cos(angle),
-            y: circle.y + circle.radius * Math.sin(angle)
-          });
-        }
-        return points;
-      }
+  const forward = m1.percent <= 50 ? { percent: m1.percent, path: forwardPath } : { percent: 100 - m1.percent, path: reversePath };
+  const reverse = m2.percent <= 50 ? { percent: m2.percent, path: reversePath } : { percent: 100 - m2.percent, path: forwardPath };
+  const best = forward.percent <= reverse.percent ? forward : reverse;
 
-      function buildPath(reverse = false) {
-        let a1, a2, full = [];
-        if (!reverse) {
-          a1 = angle(crossings[1]);
-          a2 = angle(crossings[0]);
-          full.push(crossings[0]);
-          for (let i = crossings[0].index; i <= crossings[1].index; i++) full.push(path[i]);
-          full.push(crossings[1]);
-          full = full.concat(arcPoints(a1, a2));
-        } else {
-          a1 = angle(crossings[0]);
-          a2 = angle(crossings[1]);
-          full.push(crossings[1]);
-          for (let i = crossings[1].index; i >= crossings[0].index; i--) full.push(path[i]);
-          full.push(crossings[0]);
-          full = full.concat(arcPoints(a1, a2, true));
-        }
-        return full;
-      }
+  const finalPercent = best.percent;
+  const finalPath = best.path;
+  tempPath = finalPath;
+  drawEverything(true);
 
-      function measure(pathPoints) {
-        const testCanvas = document.createElement('canvas');
-        testCanvas.width = canvas.width;
-        testCanvas.height = canvas.height;
-        const ctx2 = testCanvas.getContext('2d');
-        ctx2.beginPath();
-        ctx2.moveTo(pathPoints[0].x * scale + panX, pathPoints[0].y * scale + panY);
-        for (let p of pathPoints) ctx2.lineTo(p.x * scale + panX, p.y * scale + panY);
-        ctx2.closePath();
-        ctx2.fill();
-        const data = ctx2.getImageData(0, 0, canvas.width, canvas.height).data;
-        let total = 0, selected = 0;
-        for (let y = 0; y < canvas.height; y++) {
-          for (let x = 0; x < canvas.width; x++) {
-            const dx = (x - panX) / scale - circle.x;
-            const dy = (y - panY) / scale - circle.y;
-            if (Math.hypot(dx, dy) <= circle.radius) {
-              total++;
-              if (data[(y * canvas.width + x) * 4 + 3] > 0) selected++;
-            }
-          }
-        }
-        return { percent: selected / total * 100, pathPoints };
-      }
+  result.textContent = `Fracture area: ${finalPercent.toFixed(1)}% of circle surface.`;
 
-      const forwardPath = buildPath(false);
-const reversePath = buildPath(true);
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 
-const m1 = measure(forwardPath);
-const m2 = measure(reversePath);
-
-const forward = m1.percent <= 50
-  ? { percent: m1.percent, path: forwardPath }
-  : { percent: 100 - m1.percent, path: buildPath(true) };
-
-const reverse = m2.percent <= 50
-  ? { percent: m2.percent, path: reversePath }
-  : { percent: 100 - m2.percent, path: buildPath(false) };
-
-const best = forward.percent <= reverse.percent ? forward : reverse;
-const finalPercent = best.percent;
-const finalPath = best.path;
-
-tempPath = finalPath;
-      drawEverything(true);
-
-      result.textContent = `Fracture area: ${finalPercent.toFixed(1)}% of circle surface.`;
-
-      const now = new Date();
-      const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-
-      downloadArea.innerHTML = '';
-      const btn = document.createElement('button');
-      btn.textContent = 'Download Result';
-      btn.onclick = () => {
-        drawEverything(true);
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = 'white';
-        ctx.fillRect(5, 5, 300, 70);
-        ctx.fillStyle = 'black';
-        ctx.font = '16px Arial';
-        ctx.fillText(`Date: ${dateStr}`, 10, 25);
-        ctx.fillText(`Fracture: ${finalPercent.toFixed(1)}%`, 10, 45);
-        ctx.fillText(`ID: ${patientIdInput.value}`, 10, 65);
-        ctx.restore();
-        const link = document.createElement('a');
-        link.download = 'fracture-measurement.png';
-        link.href = canvas.toDataURL();
-        link.click();
-      };
-      downloadArea.appendChild(btn);
-    });
-  </script>
+  downloadArea.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.textContent = 'Download Result';
+  btn.onclick = () => {
+    drawEverything(true);
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(5, 5, 300, 70);
+    ctx.fillStyle = 'black';
+    ctx.font = '16px Arial';
+    ctx.fillText(`Date: ${dateStr}`, 10, 25);
+    ctx.fillText(`Fracture: ${finalPercent.toFixed(1)}%`, 10, 45);
+    ctx.fillText(`ID: ${patientIdInput.value}`, 10, 65);
+    ctx.restore();
+    const link = document.createElement('a');
+    link.download = 'fracture-measurement.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  };
+  downloadArea.appendChild(btn);
+});
+</script>
 </body>
 </html>
