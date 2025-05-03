@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.27)
+    © Upper Extremity Team, University Hospital of Bern (v1.26/)
   </footer>
 
 <script>
@@ -394,7 +394,7 @@ upload.addEventListener('change', e => {
       panY = (canvas.height - image.height * scale) / 2;
 
       const isMobile = window.innerWidth < 768;
-      const defaultRadius = isMobile ? 400 : 100;
+      const defaultRadius = isMobile ? 600 : 100;
 
       circle = {
         x: image.width / 2,
@@ -507,8 +507,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    drawX += -40 / scale;  // 40px left of finger
-    drawY += -40 / scale;  // 40px above finger (optional)
+    drawX += -80 / scale;  // 40px left of finger
+    drawY += -80 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
