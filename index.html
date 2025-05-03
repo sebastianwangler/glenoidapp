@@ -575,9 +575,18 @@ canvas.addEventListener('touchmove', e => {
   }
 
   if (isFreeDrawing) {
-    path.push(pos);
-    drawEverything();
+  let drawX = pos.x;
+  let drawY = pos.y;
+
+  if (window.innerWidth < 768) {
+    drawX += -40 / scale;  // 40px left
+    drawY += -40 / scale;  // 40px up
   }
+
+  path.push({ x: drawX, y: drawY });
+  drawEverything();
+}
+
 }, { passive: false });
 
 
