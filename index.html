@@ -189,7 +189,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.26)
+    © Upper Extremity Team, University Hospital of Bern (v1.25)
   </footer>
 
 <script>
@@ -489,9 +489,18 @@ canvas.addEventListener('mousemove', e => {
   }
 
   if (isFreeDrawing) {
-    path.push(pos);
-    drawEverything();
+  let drawX = pos.x;
+  let drawY = pos.y;
+
+  if (window.innerWidth < 768) {
+    drawX += -40 / scale;  // 40px left of finger
+    drawY += -40 / scale;  // 40px above finger (optional)
   }
+
+  path.push({ x: drawX, y: drawY });
+  drawEverything();
+}
+
 
   // Change cursor based on location
   const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
