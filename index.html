@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GlenoidApp - Circle Area Measurement</title>
   <style>
     body {
@@ -191,6 +191,12 @@ window.addEventListener('DOMContentLoaded', () => {
 }, { passive: false });
 
   canvas.addEventListener('touchend', e => {
+if (scale < 1.01 && scale > 0.99) {
+  scale = 1;
+  zoomSlider.value = 1;
+  zoomLabel.textContent = '100%';
+  drawEverything();
+}
     if (e.touches.length < 2) {
       initialDistance = null;
       initialTouches = [];
@@ -199,9 +205,11 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 const canvas = document.getElementById('canvas');
-canvas.width = window.innerWidth * 0.95;
-canvas.height = window.innerHeight * 0.6;
 const ctx = canvas.getContext('2d');
+const rect = canvas.getBoundingClientRect();
+canvas.width = rect.width * window.devicePixelRatio;
+canvas.height = rect.height * window.devicePixelRatio;
+ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
 const upload = document.getElementById('upload');
 const patientIdInput = document.getElementById('patientId');
@@ -223,17 +231,21 @@ let offsetX, offsetY;
 let path = [], tempPath = [];
 
 let circle = { x: 400, y: 300, radius: 100, color: 'blue' };
+let baseScale = 1; // zoom baseline, defined at image load
+
 
 zoomSlider.addEventListener('input', e => {
   const oldScale = scale;
-  scale = parseFloat(e.target.value);
+const zoomFactor = parseFloat(e.target.value);
+scale = baseScale * zoomFactor;
+
   zoomLabel.textContent = `${Math.round(scale * 100)}%`;
 
-  const rect = canvas.getBoundingClientRect();
-  const centerX = (rect.width / 2 - panX) / oldScale;
-  const centerY = (rect.height / 2 - panY) / oldScale;
-  panX = rect.width / 2 - centerX * scale;
-  panY = rect.height / 2 - centerY * scale;
+ const centerX = (canvas.width / 2 - panX) / oldScale;
+const centerY = (canvas.height / 2 - panY) / oldScale;
+panX = canvas.width / 2 - centerX * scale;
+panY = canvas.height / 2 - centerY * scale;
+
 
   drawEverything(tempPath.length > 0);
 });
@@ -241,9 +253,11 @@ zoomSlider.addEventListener('input', e => {
 function drawEverything(highlight = false) {
   ctx.save();
   ctx.setTransform(scale, 0, 0, scale, panX, panY);
-  ctx.clearRect(-panX / scale, -panY / scale, canvas.width / scale, canvas.height / scale);
+ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to default coordinate system
+ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear full canvas
+ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform again
 
-  if (image) ctx.drawImage(image, 0, 0, image.width, image.height);
+  if (image) ctx.drawImage(image, 0, 0);
 
   if (highlight && tempPath.length > 0) {
     ctx.beginPath();
@@ -284,8 +298,12 @@ upload.addEventListener('change', e => {
     image = new Image();
     image.onload = () => {
       const scaleX = canvas.width / image.width;
-      const scaleY = canvas.height / image.height;
-      scale = Math.min(scaleX, scaleY);
+const scaleY = canvas.height / image.height;
+baseScale = Math.min(scaleX, scaleY);
+scale = baseScale;
+zoomSlider.value = 1;
+zoomLabel.textContent = '100%';
+
       panX = (canvas.width - image.width * scale) / 2;
       panY = (canvas.height - image.height * scale) / 2;
 
@@ -434,11 +452,17 @@ function getCanvasCoords(e) {
   const rect = canvas.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
   const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  // Scale input positions based on pixel ratio
+  const scaledX = (clientX - rect.left) * window.devicePixelRatio;
+  const scaledY = (clientY - rect.top) * window.devicePixelRatio;
+
   return {
-    x: (clientX - rect.left - panX) / scale,
-    y: (clientY - rect.top - panY) / scale
+    x: (scaledX - panX) / scale,
+    y: (scaledY - panY) / scale
   };
 }
+
 
 calculateBtn.addEventListener('click', () => {
   if (path.length < 2 || !isCircleLocked) {
