@@ -111,6 +111,34 @@ html, body {
         height: 300px !important;
       }
     }
+@media (max-width: 768px) {
+  #zoomSlider {
+    height: 32px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: #ccc;
+    border-radius: 8px;
+    touch-action: pan-x;
+  }
+
+  #zoomSlider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 32px;
+    width: 32px;
+    background: #333;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  #zoomSlider::-moz-range-thumb {
+    height: 32px;
+    width: 32px;
+    background: #333;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+}
   </style>
 </head>
 <body>
@@ -334,7 +362,7 @@ upload.addEventListener('change', e => {
       panY = (canvas.height - image.height * scale) / 2;
 
       const isMobile = window.innerWidth < 768;
-      const defaultRadius = isMobile ? 200 : 100;
+      const defaultRadius = isMobile ? 400 : 100;
 
       circle = {
         x: image.width / 2,
@@ -666,25 +694,49 @@ instruction.textContent = '';
   const btn = document.createElement('button');
   btn.textContent = 'Download Result';
   btn.onclick = () => {
-    drawEverything(true);
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = 'white';
-    ctx.fillRect(5, 5, 300, 70);
-    ctx.fillStyle = 'black';
-const fontSize = Math.max(16, Math.min(36, image.width / 15));
-ctx.font = `${fontSize}px Arial`;
-   const lineHeight = fontSize * 1.4;
-ctx.fillText(`Date: ${dateStr}`, 10, lineHeight * 1);
-ctx.fillText(`Fracture: ${final.percent.toFixed(1)}%`, 10, lineHeight * 2);
-ctx.fillText(`ID: ${patientIdInput.value}`, 10, lineHeight * 3);
+  drawEverything(true);
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-    ctx.restore();
-    const link = document.createElement('a');
-    link.download = 'fracture-measurement.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  };
+  const fontSize = Math.max(16, Math.min(36, image.width / 15));
+  const lineHeight = fontSize * 1.4;
+  ctx.font = `${fontSize}px Arial`;
+
+  // Prepare lines of text
+  const lines = [
+    `Date: ${dateStr}`,
+    `Fracture: ${final.percent.toFixed(1)}%`,
+    `ID: ${patientIdInput.value}`
+  ];
+
+  // Calculate the widest text line
+  const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+  const padding = 10;
+  const boxWidth = maxWidth + padding * 2;
+  const boxHeight = lineHeight * lines.length + padding * 2;
+
+  // Draw background rectangle
+  const boxX = 5;
+const boxY = 5;
+ctx.fillStyle = 'white';
+ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+ctx.fillStyle = 'black';
+lines.forEach((line, i) => {
+  const textX = boxX + padding;
+  const textY = boxY + padding + fontSize + i * lineHeight;
+  ctx.fillText(line, textX, textY);
+});
+
+
+  ctx.restore();
+
+  const link = document.createElement('a');
+  link.download = 'fracture-measurement.png';
+  link.href = canvas.toDataURL();
+  link.click();
+};
+
   downloadArea.appendChild(btn);
 });
 document.getElementById('resetAll').addEventListener('click', () => {
