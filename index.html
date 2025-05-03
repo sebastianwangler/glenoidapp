@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.27)
+    © Upper Extremity Team, University Hospital of Bern (v1.27.1)
   </footer>
 
 <script>
@@ -370,7 +370,7 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
       ctx.lineTo(path[i].x, path[i].y);
     }
     ctx.strokeStyle = 'blue';
-    ctx.lineWidth = 2 / scale;
+    ctx.lineWidth = (window.innerWidth < 768 ? 4 : 2) / scale;
     ctx.stroke();
   }
 
@@ -420,7 +420,7 @@ upload.addEventListener('change', e => {
 lockBtn.addEventListener('click', () => {
   if (isCircleSet && !isCircleLocked) {
     isCircleLocked = true;
-    circle.color = 'rgba(255,100,100,0.8)';
+    circle.color = '#ff4d4d'; // more visible red
     instruction.textContent = 'Draw the fracture line.';
     lockBtn.style.backgroundColor = 'rgba(255,100,100,0.8)';
     drawEverything();
@@ -823,4 +823,3 @@ document.getElementById('resetAll').addEventListener('click', () => {
 </script>
 </body>
 </html>
-
