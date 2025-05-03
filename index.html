@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.27.1)
+    © Upper Extremity Team, University Hospital of Bern (v1.27)
   </footer>
 
 <script>
@@ -507,8 +507,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    drawX += -80 / scale;  // 40px left of finger
-    drawY += -80 / scale;  // 40px above finger (optional)
+    drawX += -200 / scale;  // 40px left of finger
+    drawY += -200 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
@@ -823,3 +823,4 @@ document.getElementById('resetAll').addEventListener('click', () => {
 </script>
 </body>
 </html>
+
