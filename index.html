@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GlenoidApp - Circle Area Measurement</title>
   <style>
-    body {
+html, body {
+  touch-action: manipulation;
+}   
+ body {
       font-family: Arial, sans-serif;
       text-align: center;
       margin-top: 20px;
@@ -111,6 +114,7 @@
   </style>
 </head>
 <body>
+
   <h1>GlenoidApp - Circle Area Measurement</h1>
 
 <div class="file-upload-wrapper">
@@ -119,7 +123,6 @@
     <input type="file" id="upload" accept="image/*" lang="en" />
   </label>
 </div>
-
 
 <input type="text" id="patientId" placeholder="Patient ID" /><br />
 
@@ -133,14 +136,13 @@
 </div>
 
 
-<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;">
-  <span style="font-size: 1.5em; line-height: 1;">−</span>
-  <input type="range" id="zoomSlider" min="0.5" max="3" step="0.01" value="1"
-    style="width: 100%; max-width: 300px; height: 40px; touch-action: manipulation;">
-  <span style="font-size: 1.5em; line-height: 1;">+</span>
+<div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; line-height: 1;">
+  <span style="font-size: 1.5em; display: flex; align-items: center;">−</span>
+  <input type="range" id="zoomSlider"
+         min="0.5" max="3" step="0.01" value="1"
+         style="width: 100%; max-width: 300px; height: 4px; margin: 0; padding: 0; vertical-align: middle;">
+  <span style="font-size: 1.5em; display: flex; align-items: center;">+</span>
 </div>
-
-
 
   <div id="downloadArea" style="margin-top: 10px"></div>
   <p id="instruction">Upload an image to begin.</p>
@@ -159,7 +161,7 @@
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.24)
+    © Upper Extremity Team, University Hospital of Bern (v1.25)
   </footer>
 
 <script>
@@ -223,6 +225,15 @@ canvas.width = rect.width * window.devicePixelRatio;
 canvas.height = rect.height * window.devicePixelRatio;
 ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
+
 const upload = document.getElementById('upload');
 const patientIdInput = document.getElementById('patientId');
 const lockBtn = document.getElementById('lock');
@@ -233,7 +244,7 @@ const downloadArea = document.getElementById('downloadArea');
 const instruction = document.getElementById('instruction');
 const result = document.getElementById('result');
 const zoomSlider = document.getElementById('zoomSlider');
-const zoomLabel = document.getElementById('zoomLabel');
+
 
 let image = null;
 let scale = 1, panX = 0, panY = 0;
@@ -254,7 +265,7 @@ zoomSlider.addEventListener('input', e => {
 const zoomFactor = parseFloat(e.target.value);
 scale = baseScale * zoomFactor;
 
-  zoomLabel.textContent = '';
+ 
 
 
  const centerX = (canvas.width / 2 - panX) / oldScale;
@@ -314,18 +325,16 @@ upload.addEventListener('change', e => {
     image = new Image();
     image.onload = () => {
       const scaleX = canvas.width / image.width;
-const scaleY = canvas.height / image.height;
-baseScale = Math.min(scaleX, scaleY);
-scale = baseScale;
-zoomSlider.value = 1;
-zoomLabel.textContent = '';
+      const scaleY = canvas.height / image.height;
+      baseScale = Math.min(scaleX, scaleY);
+      scale = baseScale;
+      zoomSlider.value = 1;
 
       panX = (canvas.width - image.width * scale) / 2;
       panY = (canvas.height - image.height * scale) / 2;
 
       const isMobile = window.innerWidth < 768;
-// change radius size for mobile (first number)
-      const defaultRadius = isMobile ? 400 : 100;
+      const defaultRadius = isMobile ? 200 : 100;
 
       circle = {
         x: image.width / 2,
@@ -347,6 +356,7 @@ zoomLabel.textContent = '';
   reader.readAsDataURL(file);
 });
 
+
 lockBtn.addEventListener('click', () => {
   if (isCircleSet && !isCircleLocked) {
     isCircleLocked = true;
@@ -360,7 +370,7 @@ lockBtn.addEventListener('click', () => {
 resetBtn.addEventListener('click', () => {
   if (image) {
     const isMobile = window.innerWidth < 768;
-    const defaultRadius = isMobile ? 140 : 100;
+    const defaultRadius = isMobile ? 400 : 100;
     circle = {
       x: image.width / 2,
       y: image.height / 2,
@@ -662,10 +672,13 @@ instruction.textContent = '';
     ctx.fillStyle = 'white';
     ctx.fillRect(5, 5, 300, 70);
     ctx.fillStyle = 'black';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Date: ${dateStr}`, 10, 25);
-    ctx.fillText(`Fracture: ${final.percent.toFixed(1)}%`, 10, 45);
-    ctx.fillText(`ID: ${patientIdInput.value}`, 10, 65);
+const fontSize = Math.max(16, Math.min(36, image.width / 15));
+ctx.font = `${fontSize}px Arial`;
+   const lineHeight = fontSize * 1.4;
+ctx.fillText(`Date: ${dateStr}`, 10, lineHeight * 1);
+ctx.fillText(`Fracture: ${final.percent.toFixed(1)}%`, 10, lineHeight * 2);
+ctx.fillText(`ID: ${patientIdInput.value}`, 10, lineHeight * 3);
+
     ctx.restore();
     const link = document.createElement('a');
     link.download = 'fracture-measurement.png';
@@ -675,8 +688,37 @@ instruction.textContent = '';
   downloadArea.appendChild(btn);
 });
 document.getElementById('resetAll').addEventListener('click', () => {
-  location.reload();
+  // Clear canvas and state variables
+  image = null;
+  isCircleSet = false;
+  isCircleLocked = false;
+  isMovingCircle = false;
+  isResizingCircle = false;
+  isFreeDrawing = false;
+  path = [];
+  tempPath = [];
+  patientIdInput.value = '';
+  result.textContent = '';
+  instruction.textContent = 'Upload an image to begin.';
+  lockBtn.style.backgroundColor = '';
+  downloadArea.innerHTML = '';
+
+  // Reset zoom
+  zoomSlider.value = 1;
+  scale = 1;
+  panX = 0;
+  panY = 0;
+
+  // Clear canvas
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Hide disclaimer
+  document.getElementById('disclaimerModal').style.display = 'none';
+
+  drawEverything();
 });
 </script>
 </body>
 </html>
+
