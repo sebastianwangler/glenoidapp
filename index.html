@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.26)
+    © Upper Extremity Team, University Hospital of Bern (v1.27)
   </footer>
 
 <script>
@@ -264,9 +264,12 @@ window.addEventListener('resize', () => {
   // Recalculate scaling based on new canvas size
   const scaleX = canvas.width / image.width;
   const scaleY = canvas.height / image.height;
-  baseScale = Math.min(scaleX, scaleY);
-  scale = baseScale;
-  zoomSlider.value = 1;
+  const prevZoomFactor = scale / baseScale; // preserve current zoom relative to base
+
+baseScale = Math.min(scaleX, scaleY);
+scale = baseScale * prevZoomFactor;
+zoomSlider.value = prevZoomFactor.toFixed(2); // update slider UI
+
 
   // Recalculate pan to center the image
   panX = (canvas.width - image.width * scale) / 2;
