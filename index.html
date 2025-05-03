@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.27.)
+    © Upper Extremity Team, University Hospital of Bern (v1.28)
   </footer>
 
 <script>
@@ -346,14 +346,24 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
 
   if (image) ctx.drawImage(image, 0, 0);
 
-  if (highlight && tempPath.length > 0) {
+   if (highlight && tempPath.length > 0) {
+    // Clip to the circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Draw the fracture fill only inside the circle
     ctx.beginPath();
     ctx.moveTo(tempPath[0].x, tempPath[0].y);
     for (let p of tempPath) ctx.lineTo(p.x, p.y);
     ctx.closePath();
     ctx.fillStyle = 'rgba(0,0,255,0.3)';
     ctx.fill();
+
+    ctx.restore(); // Remove the clip
   }
+
 
   if (isCircleSet) {
     ctx.beginPath();
@@ -363,16 +373,17 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
     ctx.stroke();
   }
 
-  if (path.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) {
-      ctx.lineTo(path[i].x, path[i].y);
-    }
-    ctx.strokeStyle = 'blue';
-    ctx.lineWidth = (window.innerWidth < 768 ? 4 : 2) / scale;
-    ctx.stroke();
+if (path.length > 1 && !highlight) {  // <-- only draw original path if not highlighting result
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    ctx.lineTo(path[i].x, path[i].y);
   }
+  ctx.strokeStyle = 'blue';
+  ctx.lineWidth = (window.innerWidth < 768 ? 4 : 2) / scale;
+  ctx.stroke();
+}
+
 
   ctx.restore();
 }
@@ -823,4 +834,3 @@ document.getElementById('resetAll').addEventListener('click', () => {
 </script>
 </body>
 </html>
-
