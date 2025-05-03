@@ -31,6 +31,42 @@
       min-width: 120px;
       padding: 10px;
     }
+.upload-btn {
+  display: inline-block;
+  font-size: 1em;
+  min-width: 120px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.upload-btn:hover {
+  background-color: #e0e0e0;
+  border-color: #999;
+}
+.upload-btn input[type="file"] {
+  display: none;
+}
+
+.upload-btn {
+  display: inline-block;
+  font-size: 1em;
+  min-width: 120px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+.upload-btn:hover {
+  background-color: #e0e0e0;
+  border-color: #999;
+}
+
     .file-upload-wrapper {
       position: relative;
       display: inline-block;
@@ -46,7 +82,6 @@
       bottom: 0;
       width: 100%;
       height: 100%;
-      cursor: pointer;
     }
     .file-upload-label {
       display: inline-block;
@@ -78,20 +113,25 @@
 <body>
   <h1>GlenoidApp - Circle Area Measurement</h1>
 
-  <div class="file-upload-wrapper">
-    <label class="file-upload-label" for="upload">Choose Image</label>
+<div class="file-upload-wrapper">
+  <label class="upload-btn">
+    Choose Image
     <input type="file" id="upload" accept="image/*" lang="en" />
-  </div>
-  <div id="file-name-display">No file selected</div>
+  </label>
+</div>
 
-  <input type="text" id="patientId" placeholder="Patient ID" /><br />
 
-  <div class="controls">
-    <button id="lock">Lock Circle</button>
-    <button id="reset">Reset Circle</button>
-    <button id="resetLine">Reset Line</button>
-    <button id="calculate">Calculate Area</button>
-  </div>
+<input type="text" id="patientId" placeholder="Patient ID" /><br />
+
+
+<div class="controls">
+  <button id="lock">Lock Circle</button>
+  <button id="reset">Reset Circle</button>
+  <button id="resetLine">Reset Line</button>
+  <button id="calculate">Calculate Area</button>
+  <button id="resetAll">Reset All</button>
+</div>
+
 
   <label for="zoomSlider">Zoom:</label><br>
   <input type="range" id="zoomSlider" min="0.5" max="3" step="0.01" value="1" style="width: 100%; max-width: 300px;">
@@ -108,13 +148,13 @@
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">Link original publication</a></p>
+      <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern
+    © Upper Extremity Team, University Hospital of Bern (v1.19)
   </footer>
 
 <script>
@@ -134,21 +174,21 @@ window.addEventListener('DOMContentLoaded', () => {
   }, { passive: false });
 
   canvas.addEventListener('touchmove', e => {
-    if (e.touches.length === 2 && initialDistance !== null) {
-      const newDistance = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      const zoomChange = newDistance / initialDistance;
-      const currentZoom = parseFloat(document.getElementById('zoomSlider').value);
-      let newZoom = currentZoom * zoomChange;
-      newZoom = Math.min(3, Math.max(0.5, newZoom));
-      document.getElementById('zoomSlider').value = newZoom;
-      document.getElementById('zoomSlider').dispatchEvent(new Event('input'));
-      initialDistance = newDistance;
-      e.preventDefault();
-    }
-  }, { passive: false });
+  if (e.touches.length === 2 && initialDistance !== null) {
+    const newDistance = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    let newScale = scale * (newDistance / initialDistance);
+    newScale = Math.min(Math.max(newScale, 0.5), 3);
+
+    document.getElementById('zoomSlider').value = newScale;
+    document.getElementById('zoomSlider').dispatchEvent(new Event('input'));
+
+    initialDistance = newDistance;
+    e.preventDefault();
+  }
+}, { passive: false });
 
   canvas.addEventListener('touchend', e => {
     if (e.touches.length < 2) {
@@ -427,6 +467,9 @@ calculateBtn.addEventListener('click', () => {
     return;
   }
 
+const isTopDown = path[0].y < path[path.length - 1].y;
+
+
   function angle(p) {
     return Math.atan2(p.y - circle.y, p.x - circle.x);
   }
@@ -447,25 +490,25 @@ calculateBtn.addEventListener('click', () => {
     return points;
   }
 
-  function buildPath(reverse = false) {
-    let a1, a2, full = [];
-    if (!reverse) {
-      a1 = angle(crossings[1]);
-      a2 = angle(crossings[0]);
-      full.push(crossings[0]);
-      for (let i = crossings[0].index; i <= crossings[1].index; i++) full.push(path[i]);
-      full.push(crossings[1]);
-      full = full.concat(arcPoints(a1, a2));
-    } else {
-      a1 = angle(crossings[0]);
-      a2 = angle(crossings[1]);
-      full.push(crossings[1]);
-      for (let i = crossings[1].index; i >= crossings[0].index; i--) full.push(path[i]);
-      full.push(crossings[0]);
-      full = full.concat(arcPoints(a1, a2, true));
-    }
-    return full;
-  }
+function buildBothPaths() {
+  const a1 = angle(crossings[0]);
+  const a2 = angle(crossings[1]);
+
+  // First path: from crossings[0] to crossings[1] through drawn path, then arc from a2 to a1
+  let path1 = [crossings[0]];
+  for (let i = crossings[0].index; i <= crossings[1].index; i++) path1.push(path[i]);
+  path1.push(crossings[1]);
+  path1 = path1.concat(arcPoints(a2, a1, true)); // back around via arc
+
+  // Second path: from crossings[1] to crossings[0] through reverse drawn path, then arc from a1 to a2
+  let path2 = [crossings[1]];
+  for (let i = crossings[1].index; i >= crossings[0].index; i--) path2.push(path[i]);
+  path2.push(crossings[0]);
+  path2 = path2.concat(arcPoints(a1, a2, true)); // back around via arc
+
+  return [path1, path2];
+}
+
 
   function measure(pathPoints) {
     const testCanvas = document.createElement('canvas');
@@ -489,25 +532,21 @@ calculateBtn.addEventListener('click', () => {
         }
       }
     }
-    return { percent: selected / total * 100, pathPoints };
+    return { percent: selected / total * 100, path: pathPoints };
   }
 
-  const forwardPath = buildPath(false);
-  const reversePath = buildPath(true);
+const [path1, path2] = buildBothPaths();
+const m1 = measure(path1);
+const m2 = measure(path2);
 
-  const m1 = measure(forwardPath);
-  const m2 = measure(reversePath);
+const final = m1.percent <= m2.percent ? m1 : m2;
 
-  const forward = m1.percent <= 50 ? { percent: m1.percent, path: forwardPath } : { percent: 100 - m1.percent, path: reversePath };
-  const reverse = m2.percent <= 50 ? { percent: m2.percent, path: reversePath } : { percent: 100 - m2.percent, path: forwardPath };
-  const best = forward.percent <= reverse.percent ? forward : reverse;
 
-  const finalPercent = best.percent;
-  const finalPath = best.path;
-  tempPath = finalPath;
+
+  tempPath = final.path;
   drawEverything(true);
 
-  result.textContent = `Fracture area: ${finalPercent.toFixed(1)}% of circle surface.`;
+  result.textContent = `Fracture area: ${final.percent.toFixed(1)}% of circle surface.`;
 
   const now = new Date();
   const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
@@ -524,7 +563,7 @@ calculateBtn.addEventListener('click', () => {
     ctx.fillStyle = 'black';
     ctx.font = '16px Arial';
     ctx.fillText(`Date: ${dateStr}`, 10, 25);
-    ctx.fillText(`Fracture: ${finalPercent.toFixed(1)}%`, 10, 45);
+    ctx.fillText(`Fracture: ${final.percent.toFixed(1)}%`, 10, 45);
     ctx.fillText(`ID: ${patientIdInput.value}`, 10, 65);
     ctx.restore();
     const link = document.createElement('a');
@@ -533,6 +572,9 @@ calculateBtn.addEventListener('click', () => {
     link.click();
   };
   downloadArea.appendChild(btn);
+});
+document.getElementById('resetAll').addEventListener('click', () => {
+  location.reload();
 });
 </script>
 </body>
