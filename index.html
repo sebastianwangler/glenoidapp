@@ -20,15 +20,26 @@ html, body {
       gap: 10px;
       margin-bottom: 20px;
     }
-    canvas {
-      border: 1px solid #333;
-      margin-top: 20px;
-      background-color: white;
-      touch-action: none;
-      user-select: none;
-      width: 95vw;
-      height: 60vh;
-    }
+   canvas {
+  border: 1px solid #333;
+  margin-top: 20px;
+  background-color: white;
+  touch-action: none;
+  user-select: none;
+  width: 95vw;
+  height: 60vh;
+  max-width: 800px;
+}
+
+/* Narrower canvas on small screens */
+@media (max-width: 768px) {
+  canvas {
+    width: 90vw;
+    max-width: 380px; /* fit standard photo width */
+    height: 60vh;      /* keep consistent height */
+  }
+}
+
     button, input[type="text"] {
       font-size: 1em;
       min-width: 120px;
@@ -809,3 +820,4 @@ document.getElementById('resetAll').addEventListener('click', () => {
 </script>
 </body>
 </html>
+
