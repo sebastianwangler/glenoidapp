@@ -189,7 +189,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.25)
+    © Upper Extremity Team, University Hospital of Bern (v1.26)
   </footer>
 
 <script>
@@ -244,6 +244,24 @@ window.addEventListener('DOMContentLoaded', () => {
       initialTouches = [];
     }
   });
+});
+window.addEventListener('resize', () => {
+  if (!image) return; // Skip if no image is loaded
+
+  resizeCanvas(); // Adjust canvas size based on new screen size
+
+  // Recalculate scaling based on new canvas size
+  const scaleX = canvas.width / image.width;
+  const scaleY = canvas.height / image.height;
+  baseScale = Math.min(scaleX, scaleY);
+  scale = baseScale;
+  zoomSlider.value = 1;
+
+  // Recalculate pan to center the image
+  panX = (canvas.width - image.width * scale) / 2;
+  panY = (canvas.height - image.height * scale) / 2;
+
+  drawEverything(tempPath.length > 0); // Redraw with updated settings
 });
 
 const canvas = document.getElementById('canvas');
@@ -773,4 +791,3 @@ document.getElementById('resetAll').addEventListener('click', () => {
 </script>
 </body>
 </html>
-
