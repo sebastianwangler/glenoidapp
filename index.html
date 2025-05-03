@@ -133,9 +133,14 @@
 </div>
 
 
-  <label for="zoomSlider">Zoom:</label><br>
-  <input type="range" id="zoomSlider" min="0.5" max="3" step="0.01" value="1" style="width: 100%; max-width: 300px;">
-  <span id="zoomLabel">100%</span>
+<div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px;">
+  <span style="font-size: 1.5em; line-height: 1;">−</span>
+  <input type="range" id="zoomSlider" min="0.5" max="3" step="0.01" value="1"
+    style="width: 100%; max-width: 300px; height: 40px; touch-action: manipulation;">
+  <span style="font-size: 1.5em; line-height: 1;">+</span>
+</div>
+
+
 
   <div id="downloadArea" style="margin-top: 10px"></div>
   <p id="instruction">Upload an image to begin.</p>
@@ -154,7 +159,7 @@
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.22)
+    © Upper Extremity Team, University Hospital of Bern (v1.24)
   </footer>
 
 <script>
@@ -164,16 +169,27 @@ window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('canvas');
 
   canvas.addEventListener('touchstart', e => {
-    if (e.touches.length === 2) {
-      initialTouches = [...e.touches];
-      initialDistance = Math.hypot(
-        initialTouches[0].clientX - initialTouches[1].clientX,
-        initialTouches[0].clientY - initialTouches[1].clientY
-      );
-    }
-  }, { passive: false });
+  if (window.innerWidth < 768) {
+    e.preventDefault(); // Disable pinch zoom on mobile
+    return;
+  }
+
+  if (e.touches.length === 2) {
+    initialTouches = [...e.touches];
+    initialDistance = Math.hypot(
+      initialTouches[0].clientX - initialTouches[1].clientX,
+      initialTouches[0].clientY - initialTouches[1].clientY
+    );
+  }
+}, { passive: false });
+
 
   canvas.addEventListener('touchmove', e => {
+  if (window.innerWidth < 768) {
+    e.preventDefault(); // Disable pinch zoom response on mobile
+    return;
+  }
+
   if (e.touches.length === 2 && initialDistance !== null) {
     const newDistance = Math.hypot(
       e.touches[0].clientX - e.touches[1].clientX,
@@ -189,6 +205,7 @@ window.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
   }
 }, { passive: false });
+
 
   canvas.addEventListener('touchend', e => {
 
@@ -237,7 +254,8 @@ zoomSlider.addEventListener('input', e => {
 const zoomFactor = parseFloat(e.target.value);
 scale = baseScale * zoomFactor;
 
-  zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+  zoomLabel.textContent = '';
+
 
  const centerX = (canvas.width / 2 - panX) / oldScale;
 const centerY = (canvas.height / 2 - panY) / oldScale;
@@ -300,13 +318,14 @@ const scaleY = canvas.height / image.height;
 baseScale = Math.min(scaleX, scaleY);
 scale = baseScale;
 zoomSlider.value = 1;
-zoomLabel.textContent = '100%';
+zoomLabel.textContent = '';
 
       panX = (canvas.width - image.width * scale) / 2;
       panY = (canvas.height - image.height * scale) / 2;
 
       const isMobile = window.innerWidth < 768;
-      const defaultRadius = isMobile ? 200 : 100;
+// change radius size for mobile (first number)
+      const defaultRadius = isMobile ? 400 : 100;
 
       circle = {
         x: image.width / 2,
@@ -448,7 +467,8 @@ canvas.addEventListener('touchstart', e => {
   const d = Math.hypot(pos.x - circle.x, pos.y - circle.y);
 
   if (!isCircleLocked) {
-    if (Math.abs(d - circle.radius) < 10) {
+    if (Math.abs(d - circle.radius) < 40 / scale) {
+
       isResizingCircle = true;
     } else if (d < circle.radius) {
       isMovingCircle = true;
@@ -627,6 +647,7 @@ const final = m1.percent <= m2.percent ? m1 : m2;
   drawEverything(true);
 
   result.textContent = `Fracture area: ${final.percent.toFixed(1)}% of circle surface.`;
+instruction.textContent = '';
 
   const now = new Date();
   const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
