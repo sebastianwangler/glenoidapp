@@ -200,7 +200,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.4)
+    © Upper Extremity Team, University Hospital of Bern (v1.5)
   </footer>
 
 <script>
@@ -461,15 +461,24 @@ upload.addEventListener('change', e => {
       panX = (canvas.width - image.width * scale) / 2;
       panY = (canvas.height - image.height * scale) / 2;
 
-      const isMobile = window.innerWidth < 768;
-      const defaultRadius = isMobile ? 900 : 100;
+    // Dynamically calculate radius based on visible image size
+const displayedWidth = image.width * baseScale;
+const displayedHeight = image.height * baseScale;
+const smallerDimension = Math.min(displayedWidth, displayedHeight);
 
-      circle = {
-        x: image.width / 2,
-        y: image.height / 2,
-        radius: defaultRadius,
-        color: 'blue'
-      };
+// Circle will be 25% of the smaller canvas dimension (adjust if needed)
+const visualRadiusFraction = 0.25;
+const visualRadius = smallerDimension * visualRadiusFraction;
+
+// Convert to image coordinates (because drawing logic works in image space)
+const defaultRadius = visualRadius / baseScale;
+
+circle = {
+  x: image.width / 2,
+  y: image.height / 2,
+  radius: defaultRadius,
+  color: 'blue'
+};
 
       isCircleSet = true;
       isCircleLocked = false;
