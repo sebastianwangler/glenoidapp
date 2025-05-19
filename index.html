@@ -250,7 +250,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.31.1)
+    © Upper Extremity Team, University Hospital of Bern (v1.31)
   </footer>
 
 <canvas id="magnifier" width="120" height="120" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
@@ -465,6 +465,8 @@ function updateMagnifier(x, y) {
 
   const canvasRect = canvas.getBoundingClientRect();
   magnifier.style.display = 'block';
+  magnifier.style.left = ${(window.innerWidth - size) / 2}px;
+  magnifier.style.top = ${canvasRect.top}px;
 
   // Convert logical (image) coordinates to canvas pixel coordinates
   const sourceX = x * scale + panX;
@@ -629,9 +631,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    const offset = window.innerWidth < 500 ? -20 / scale : -10 / scale;
-drawX += offset;
-drawY += offset;
+    drawX += -40 / scale;  // 40px left of finger
+    drawY += -40 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
