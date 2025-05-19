@@ -415,19 +415,20 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
+    const canvasRect = canvas.getBoundingClientRect();
   const pointerX = x * scale + panX;
   const pointerY = y * scale + panY;
 
-  const canvasRect = canvas.getBoundingClientRect();
   const left = canvasRect.left + (pointerX / window.devicePixelRatio) - magnifier.width / 2;
   const top = canvasRect.top + (pointerY / window.devicePixelRatio) - magnifier.height - 20;
 
   const clampedLeft = Math.max(10, Math.min(left, window.innerWidth - magnifier.width - 10));
   const clampedTop = Math.max(10, Math.min(top, window.innerHeight - magnifier.height - 10));
 
-  magnifier.style.left = `${clampedLeft}px`;
-  magnifier.style.top = `${clampedTop}px`;
+  magnifier.style.left = ${clampedLeft}px;
+  magnifier.style.top = ${clampedTop}px;
   magnifier.style.display = 'block';
+
 
   const sx = x - halfSize;
   const sy = y - halfSize;
@@ -449,24 +450,16 @@ function updateMagnifier(x, y) {
   );
   mctx.restore();
 
-
-  const pointerX = x * scale + panX;
-const pointerY = y * scale + panY;
-const screenX = pointerX - sourceX;
-const screenY = pointerY - sourceY;
-
-const crossX = screenX * zoom;
-const crossY = screenY * zoom;
-
-mctx.strokeStyle = 'white';
-mctx.lineWidth = 1;
-mctx.beginPath();
-mctx.moveTo(crossX, 0);
-mctx.lineTo(crossX, size);
-mctx.moveTo(0, crossY);
-mctx.lineTo(size, crossY);
-mctx.stroke();
-
+  // ➕ Draw crosshair at center of magnifier
+  const center = size / 2;
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 1;
+  mctx.beginPath();
+  mctx.moveTo(center, 0);
+  mctx.lineTo(center, size);
+  mctx.moveTo(0, center);
+  mctx.lineTo(size, center);
+  mctx.stroke();
 
 // Optionally show a preview of the current path
 if (path.length > 1) {
@@ -713,7 +706,7 @@ if (isFreeDrawing) {
   drawEverything();
 
   // Show magnifier
-  updateMagnifier(drawX, drawY);
+  updateMagnifier(pos.x, pos.y);
 }
 
 }, { passive: false });
@@ -850,11 +843,11 @@ const final = m1.percent <= m2.percent ? m1 : m2;
   tempPath = final.path;
   drawEverything(true);
 
-  result.textContent = `Fracture area: ${final.percent.toFixed(1)}% of circle surface.`;
+  result.textContent = Fracture area: ${final.percent.toFixed(1)}% of circle surface.;
 instruction.textContent = '';
 
   const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+  const dateStr = ${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()};
 
   downloadArea.innerHTML = '';
   const btn = document.createElement('button');
@@ -866,13 +859,13 @@ instruction.textContent = '';
 
   const fontSize = Math.max(16, Math.min(36, image.width / 15));
   const lineHeight = fontSize * 1.4;
-ctx.font = `${fontSize}px Arial`;
+ctx.font = ${fontSize}px Arial;
 
   // Prepare lines of text
   const lines = [
-  `Date: ${dateStr}`,
-  `Fracture: ${final.percent.toFixed(1)}%`,
-  `ID: ${patientIdInput.value}`
+  Date: ${dateStr},
+  Fracture: ${final.percent.toFixed(1)}%,
+  ID: ${patientIdInput.value}
 ];
 
 
