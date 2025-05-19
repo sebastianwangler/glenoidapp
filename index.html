@@ -215,10 +215,10 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.31)
+    © Upper Extremity Team, University Hospital of Bern (v1.311)
   </footer>
 
-<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
+<canvas id="magnifier" width="120" height="120" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -424,14 +424,14 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 2;
+  const zoom = 1.5;
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
   const canvasRect = canvas.getBoundingClientRect();
   magnifier.style.display = 'block';
   magnifier.style.left = `${(window.innerWidth - magnifier.offsetWidth) / 2}px`;
-  magnifier.style.top = `${canvasRect.top - magnifier.offsetHeight - 16}px`;
+  magnifier.style.top = `${canvasRect.top - magnifier.offsetHeight}px`;
 
   const sx = x - halfSize;
   const sy = y - halfSize;
@@ -463,23 +463,24 @@ function updateMagnifier(x, y) {
   mctx.stroke();
 
   // Draw blue path over magnified view
-  if (path.length > 1) {
-    mctx.save();
+  // Draw blue path over magnified view
+if (path.length > 1) {
+  mctx.save();
 
-    // Translate so that (sx, sy) becomes the origin
-    mctx.translate(-sourceX, -sourceY);
-    mctx.scale(scale * zoom, scale * zoom); // Match canvas transform
+  // Apply correct transform: scale and translate in one step
+  mctx.setTransform(scale * zoom, 0, 0, scale * zoom, -sourceX * scale * zoom, -sourceY * scale * zoom);
 
-    mctx.beginPath();
-    mctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) {
-      mctx.lineTo(path[i].x, path[i].y);
-    }
-    mctx.strokeStyle = '#00aaff';
-    mctx.lineWidth = 2 / zoom;
-    mctx.stroke();
-    mctx.restore();
+  mctx.beginPath();
+  mctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    mctx.lineTo(path[i].x, path[i].y);
   }
+  mctx.strokeStyle = '#00aaff';
+  mctx.lineWidth = 2 / zoom;
+  mctx.stroke();
+
+  mctx.restore();
+}
 }
 
 upload.addEventListener('change', e => {
