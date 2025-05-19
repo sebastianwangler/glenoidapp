@@ -243,7 +243,7 @@ html, body {
   <div id="disclaimerModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
-      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool. © Upper Extremity Team, University Hospital of Bern (v1.31).</p>
+      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool. <p> © Upper Extremity Team, University Hospital of Bern <p> (v1.31)< /p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -462,19 +462,20 @@ function updateMagnifier(x, y) {
   const canvasRect = canvas.getBoundingClientRect();
   magnifier.style.display = 'block';
 
-  // Convert logical (image) coordinates to canvas pixel coordinates
+  // 🧠 Set position adjacent to canvas (to the right)
+  magnifier.style.left = `${canvasRect.right + 10}px`; // 10px gap from canvas
+  magnifier.style.top = `${canvasRect.top}px`;
+
   const sourceX = x * scale + panX;
   const sourceY = y * scale + panY;
   const sourceSize = size / zoom;
 
-  // Define draw region in source canvas (centered at sourceX/Y)
   const sx = sourceX - sourceSize / 2;
   const sy = sourceY - sourceSize / 2;
 
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
-  // Draw zoomed-in portion of canvas
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
@@ -484,7 +485,6 @@ function updateMagnifier(x, y) {
   );
   mctx.restore();
 
-  // Draw centered crosshair
   mctx.strokeStyle = 'white';
   mctx.lineWidth = 1;
   mctx.beginPath();
@@ -494,6 +494,7 @@ function updateMagnifier(x, y) {
   mctx.lineTo(size, halfSize);
   mctx.stroke();
 }
+
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
