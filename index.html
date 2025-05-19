@@ -201,7 +201,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.28)
+    © Upper Extremity Team, University Hospital of Bern (v1.30)
   </footer>
 
 <canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
@@ -401,10 +401,10 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-  // Place magnifier at bottom-right of canvas
-  const canvasRect = canvas.getBoundingClientRect();
-  magnifier.style.left = `${canvasRect.right - size / window.devicePixelRatio - 10}px`;
-  magnifier.style.top = `${canvasRect.bottom - size / window.devicePixelRatio - 10}px`;
+// Place magnifier centered above the canvas
+const canvasRect = canvas.getBoundingClientRect();
+magnifier.style.left = `${canvasRect.left + (canvasRect.width - size / window.devicePixelRatio) / 2}px`;
+magnifier.style.top = `${canvasRect.top - size / window.devicePixelRatio - 10}px`;
 
   const sx = (x - halfSize);
   const sy = (y - halfSize);
