@@ -186,12 +186,12 @@ html, body {
 }
 
 #magnifier {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 120px;
+  position: absolute;
+  top: 0;
+  left: 100%; /* Place it just to the right of the main canvas */
+  margin-left: 10px; /* small gap */
+  width: 160px;       /* increased width */
+  height: 160px;      /* increased height */
   border: 2px solid #000;
   background: white;
   display: none;
@@ -243,15 +243,11 @@ html, body {
   <div id="disclaimerModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
-      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
+      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool. © Upper Extremity Team, University Hospital of Bern (v1.31).</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
   </div>
-
-  <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.31.1)
-  </footer>
 
 <canvas id="magnifier" width="120" height="120" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
