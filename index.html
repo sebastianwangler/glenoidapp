@@ -201,7 +201,8 @@ html, body {
   <div id="disclaimerModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 9999;">
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
-      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool. © Upper Extremity Team, University Hospital of Bern (v1.31) </p>
+      <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
+      <p>© Upper Extremity Team, University Hospital of Bern, v1.31)</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -410,7 +411,7 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 2; // Magnification level
+  const zoom = 1.5; // Magnification level
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
@@ -418,8 +419,9 @@ function updateMagnifier(x, y) {
   const canvasRect = canvas.getBoundingClientRect();
 
   // Position magnifier above the canvas, centered horizontally over the touch/mouse point
-  const magnifierLeft = window.innerWidth / 2 - magnifier.width / 2;
+ const magnifierLeft = canvasRect.left + (canvasRect.width - magnifier.width) / 2;
 const magnifierTop = canvasRect.top - magnifier.height - 12;
+
 
   // Ensure it doesn’t go off-screen (optional)
   const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
@@ -458,15 +460,15 @@ magnifier.style.top = `${top}px`;
   mctx.stroke();
 
   // Draw current path preview in magnifier
-  if (path.length > 1) {
+if (path.length > 1) {
   mctx.save();
   mctx.beginPath();
   mctx.moveTo((path[0].x * scale + panX - sourceX) * zoom, (path[0].y * scale + panY - sourceY) * zoom);
   for (let i = 1; i < path.length; i++) {
     mctx.lineTo((path[i].x * scale + panX - sourceX) * zoom, (path[i].y * scale + panY - sourceY) * zoom);
   }
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 2;
+  mctx.strokeStyle = '#00aaff'; // consistent with main canvas
+  mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4); // same thickness
   mctx.stroke();
   mctx.restore();
 }
