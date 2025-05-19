@@ -203,7 +203,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.30.1)
+    © Upper Extremity Team, University Hospital of Bern (v1.31)
   </footer>
 
 <canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
@@ -357,22 +357,23 @@ document.getElementById('zoomOut').addEventListener('click', () => {
 });
 
 function drawEverything(highlight = false) {
-  ctx.save();
+  // Clear canvas and reset transformation
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply transformation AFTER clearing
   ctx.setTransform(scale, 0, 0, scale, panX, panY);
-ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to default coordinate system
-ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear full canvas
-ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform again
 
-  if (image) ctx.drawImage(image, 0, 0);
+  if (image) {
+    ctx.drawImage(image, 0, 0);
+  }
 
-   if (highlight && tempPath.length > 0) {
-    // Clip to the circle
+  if (highlight && tempPath.length > 0) {
     ctx.save();
     ctx.beginPath();
     ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
     ctx.clip();
 
-    // Draw the fracture fill only inside the circle
     ctx.beginPath();
     ctx.moveTo(tempPath[0].x, tempPath[0].y);
     for (let p of tempPath) ctx.lineTo(p.x, p.y);
@@ -380,9 +381,8 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
     ctx.fillStyle = 'rgba(0,170,255,0.3)';
     ctx.fill();
 
-    ctx.restore(); // Remove the clip
+    ctx.restore();
   }
-
 
   if (isCircleSet) {
     ctx.beginPath();
@@ -392,55 +392,52 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
     ctx.stroke();
   }
 
-if (path.length > 1 && !highlight) {  // <-- only draw original path if not highlighting result
-  ctx.beginPath();
-  ctx.moveTo(path[0].x, path[0].y);
-  for (let i = 1; i < path.length; i++) {
-    ctx.lineTo(path[i].x, path[i].y);
+  if (path.length > 1 && !highlight) {
+    ctx.beginPath();
+    ctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) {
+      ctx.lineTo(path[i].x, path[i].y);
+    }
+    ctx.strokeStyle = '#00aaff';
+    ctx.lineWidth = (window.innerWidth < 768 ? 6 : 4) / scale;
+    ctx.stroke();
   }
-  ctx.strokeStyle = '#00aaff';
-  ctx.lineWidth = (window.innerWidth < 768 ? 6 : 4) / scale;
-  ctx.stroke();
-}
-
-
-  ctx.restore();
 }
 const magnifier = document.getElementById('magnifier');
 const mctx = magnifier.getContext('2d');
+
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 2;
+  const zoom = 2; // Magnification level
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
   // Get canvas position
   const canvasRect = canvas.getBoundingClientRect();
 
-  // Position magnifier above the canvas, centered on touch/mouse point
+  // Position magnifier above the canvas, centered horizontally over the touch/mouse point
   const magnifierLeft = canvasRect.left + (x * scale + panX) / window.devicePixelRatio - magnifier.width / 2;
-  const magnifierTop = canvasRect.top - magnifier.height - 12;
+  const magnifierTop = canvasRect.top - magnifier.height - 12; // Add some spacing above the canvas
 
+  // Ensure it doesn’t go off-screen (optional)
   const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
-  const top = Math.max(8, magnifierTop);
+  const top = Math.max(8, magnifierTop); // prevent going above viewport
 
-  magnifier.style.left = `${left}px`;
-  magnifier.style.top = `${top}px`;
+magnifier.style.left = `${left}px`;
+magnifier.style.top = `${top}px`;
   magnifier.style.display = 'block';
 
-  // Setup drawing source
   const sx = x - halfSize;
   const sy = y - halfSize;
+
   const sourceX = sx * scale + panX;
   const sourceY = sy * scale + panY;
   const sourceSize = size / zoom;
 
-  // Clear magnifier canvas
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
-  // Draw zoomed image
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
@@ -450,7 +447,16 @@ function updateMagnifier(x, y) {
   );
   mctx.restore();
 
-  // Draw fracture path aligned to center
+  // Draw crosshair
+  mctx.strokeStyle = 'red';
+  mctx.beginPath();
+  mctx.moveTo(size / 2, 0);
+  mctx.lineTo(size / 2, size);
+  mctx.moveTo(0, size / 2);
+  mctx.lineTo(size, size / 2);
+  mctx.stroke();
+
+  // Draw current path preview in magnifier
   if (path.length > 1) {
     mctx.save();
     mctx.translate(-sourceX * zoom, -sourceY * zoom);
@@ -466,17 +472,6 @@ function updateMagnifier(x, y) {
     mctx.stroke();
     mctx.restore();
   }
-
-  // Draw white crosshair **after** path for visibility
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 1.2;
-  mctx.beginPath();
-  mctx.moveTo(size / 2, 0);
-  mctx.lineTo(size / 2, size);
-  mctx.moveTo(0, size / 2);
-  mctx.lineTo(size, size / 2);
-  mctx.stroke();
-}
 }
 
 
@@ -859,14 +854,15 @@ instruction.textContent = '';
 
   const fontSize = Math.max(16, Math.min(36, image.width / 15));
   const lineHeight = fontSize * 1.4;
-  ctx.font = `${fontSize}px Arial`;
+ctx.font = `${fontSize}px Arial`;
 
   // Prepare lines of text
   const lines = [
-    `Date: ${dateStr}`,
-    `Fracture: ${final.percent.toFixed(1)}%`,
-    `ID: ${patientIdInput.value}`
-  ];
+  `Date: ${dateStr}`,
+  `Fracture: ${final.percent.toFixed(1)}%`,
+  `ID: ${patientIdInput.value}`
+];
+
 
   // Calculate the widest text line
   const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
