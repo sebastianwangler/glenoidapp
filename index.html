@@ -202,7 +202,7 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31.1</p>
+      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -411,7 +411,7 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 1.5; // Magnification level
+  const zoom = 1.25; // Magnification level
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
@@ -419,13 +419,14 @@ function updateMagnifier(x, y) {
   const canvasRect = canvas.getBoundingClientRect();
 
   // Position magnifier above the canvas, centered horizontally over the touch/mouse point
-const magnifierLeft = (window.innerWidth - magnifier.width) / 2;
-const magnifierTop = canvasRect.top - magnifier.height;
+const clientX = x * scale + panX;
+const clientY = y * scale + panY;
+const magnifierLeft = clientX / window.devicePixelRatio - magnifier.width / 2;
+const magnifierTop = clientY / window.devicePixelRatio - magnifier.height - 20; // 20px above finger
 
+const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
+const top = Math.max(8, magnifierTop);
 
-  // Ensure it doesn’t go off-screen (optional)
-  const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
-  const top = Math.max(8, magnifierTop); // prevent going above viewport
 
 magnifier.style.left = `${left}px`;
 magnifier.style.top = `${top}px`;
