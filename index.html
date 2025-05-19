@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" type="image/png" href="/glenoidapp/favicon.png" />
+  <link rel="icon" type="image/png" href="favicon.png" />
   <title>ShoulderApp - Circle Area Measurement</title>
   <style>
 html, body {
@@ -152,52 +152,6 @@ html, body {
     border-radius: 50%;
  } 
 }
-@media (max-width: 768px) {
-  .zoom-controls {
-    padding: 0 20px;
-    gap: 40px;
-  }
-
-  .zoom-controls span {
-    font-size: 2em;
-  }
-}
-
-@media (max-width: 768px) {
-  h1 {
-    font-size: 1.4em;
-    margin-top: 10px;
-  }
-
-  footer {
-    font-size: 0.75em;
-    margin-top: 10px;
-  }
-}
-
-@media (max-width: 480px) {
-  h1 {
-    font-size: 1.2em;
-  }
-
-  footer {
-    font-size: 0.7em;
-  }
-}
-
-#magnifier {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 120px;
-  border: 2px solid #000;
-  background: white;
-  display: none;
-  z-index: 9999;
-}
-
   </style>
 </head>
 <body>
@@ -223,8 +177,7 @@ html, body {
 </div>
 
 
-<div class="zoom-controls" style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px; line-height: 1;">
-
+<div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px; line-height: 1;">
   <span id="zoomOut" style="font-size: 1.5em; cursor: pointer; user-select: none;">−</span>
   <input type="range" id="zoomSlider"
          min="0.5" max="3" step="0.01" value="1"
@@ -250,10 +203,10 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.31)
+    © Upper Extremity Team, University Hospital of Bern (v1.30)
   </footer>
 
-<canvas id="magnifier" width="120" height="120" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
+<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -459,47 +412,65 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 1.5;
-  const size = magnifier.width;
-  const halfSize = size / 2;
-
-  const canvasRect = canvas.getBoundingClientRect();
   magnifier.style.display = 'block';
-  magnifier.style.left = ${(window.innerWidth - size) / 2}px;
-  magnifier.style.top = ${canvasRect.top}px;
+  const zoom = 2; // <-- reduced from 3 to 2
+  const size = magnifier.width;
+  const halfSize = size / (2 * zoom);
 
-  // Convert logical (image) coordinates to canvas pixel coordinates
-  const sourceX = x * scale + panX;
-  const sourceY = y * scale + panY;
+// Place magnifier centered above the canvas
+// Place magnifier centered on screen and above the canvas
+const canvasRect = canvas.getBoundingClientRect();
+magnifier.style.left = `${(window.innerWidth - magnifier.width / window.devicePixelRatio) / 2}px`;
+magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelRatio - 16}px`;
+
+
+  const sx = (x - halfSize);
+  const sy = (y - halfSize);
+
+  const sourceX = sx * scale + panX;
+  const sourceY = sy * scale + panY;
   const sourceSize = size / zoom;
-
-  // Define draw region in source canvas (centered at sourceX/Y)
-  const sx = sourceX - sourceSize / 2;
-  const sy = sourceY - sourceSize / 2;
 
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
-  // Draw zoomed-in portion of canvas
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
     canvas,
-    sx, sy, sourceSize, sourceSize,
+    sourceX, sourceY, sourceSize, sourceSize,
     0, 0, sourceSize, sourceSize
   );
   mctx.restore();
 
-  // Draw centered crosshair
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 1;
+  // Draw crosshair
+  mctx.strokeStyle = 'red';
   mctx.beginPath();
-  mctx.moveTo(halfSize, 0);
-  mctx.lineTo(halfSize, size);
-  mctx.moveTo(0, halfSize);
-  mctx.lineTo(size, halfSize);
+  mctx.moveTo(size / 2, 0);
+  mctx.lineTo(size / 2, size);
+  mctx.moveTo(0, size / 2);
+  mctx.lineTo(size, size / 2);
   mctx.stroke();
+
+// Draw path preview aligned with red cross
+if (path.length > 1) {
+  mctx.save();
+  mctx.translate(-sourceX * zoom, -sourceY * zoom);
+  mctx.scale(scale * zoom, scale * zoom);
+  mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
+  mctx.beginPath();
+  mctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    mctx.lineTo(path[i].x, path[i].y);
+  }
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 2 / zoom;
+  mctx.stroke();
+  mctx.restore();
 }
+
+}
+
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -631,8 +602,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    drawX += -40 / scale;  // 40px left of finger
-    drawY += -40 / scale;  // 40px above finger (optional)
+    drawX += -200 / scale;  // 40px left of finger
+    drawY += -2000 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
@@ -863,11 +834,11 @@ const final = m1.percent <= m2.percent ? m1 : m2;
   tempPath = final.path;
   drawEverything(true);
 
-  result.textContent = Fracture area: ${final.percent.toFixed(1)}% of circle surface.;
+  result.textContent = `Fracture area: ${final.percent.toFixed(1)}% of circle surface.`;
 instruction.textContent = '';
 
   const now = new Date();
-  const dateStr = ${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()};
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 
   downloadArea.innerHTML = '';
   const btn = document.createElement('button');
@@ -879,13 +850,13 @@ instruction.textContent = '';
 
   const fontSize = Math.max(16, Math.min(36, image.width / 15));
   const lineHeight = fontSize * 1.4;
-  ctx.font = ${fontSize}px Arial;
+  ctx.font = `${fontSize}px Arial`;
 
   // Prepare lines of text
   const lines = [
-    Date: ${dateStr},
-    Fracture: ${final.percent.toFixed(1)}%,
-    ID: ${patientIdInput.value}
+    `Date: ${dateStr}`,
+    `Fracture: ${final.percent.toFixed(1)}%`,
+    `ID: ${patientIdInput.value}`
   ];
 
   // Calculate the widest text line
