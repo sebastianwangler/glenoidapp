@@ -203,7 +203,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.30)
+    © Upper Extremity Team, University Hospital of Bern (v1.30.1)
   </footer>
 
 <canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
@@ -408,32 +408,39 @@ if (path.length > 1 && !highlight) {  // <-- only draw original path if not high
 }
 const magnifier = document.getElementById('magnifier');
 const mctx = magnifier.getContext('2d');
-
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  magnifier.style.display = 'block';
-  const zoom = 2; // <-- reduced from 3 to 2
+  const zoom = 2;
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-// Place magnifier centered above the canvas
-// Place magnifier centered on screen and above the canvas
-const canvasRect = canvas.getBoundingClientRect();
-magnifier.style.left = `${(window.innerWidth - magnifier.width / window.devicePixelRatio) / 2}px`;
-magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelRatio - 16}px`;
+  // Get canvas position
+  const canvasRect = canvas.getBoundingClientRect();
 
+  // Position magnifier above the canvas, centered on touch/mouse point
+  const magnifierLeft = canvasRect.left + (x * scale + panX) / window.devicePixelRatio - magnifier.width / 2;
+  const magnifierTop = canvasRect.top - magnifier.height - 12;
 
-  const sx = (x - halfSize);
-  const sy = (y - halfSize);
+  const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
+  const top = Math.max(8, magnifierTop);
 
+  magnifier.style.left = `${left}px`;
+  magnifier.style.top = `${top}px`;
+  magnifier.style.display = 'block';
+
+  // Setup drawing source
+  const sx = x - halfSize;
+  const sy = y - halfSize;
   const sourceX = sx * scale + panX;
   const sourceY = sy * scale + panY;
   const sourceSize = size / zoom;
 
+  // Clear magnifier canvas
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
+  // Draw zoomed image
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
@@ -443,33 +450,35 @@ magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelR
   );
   mctx.restore();
 
-  // Draw crosshair
-  mctx.strokeStyle = 'red';
+  // Draw fracture path aligned to center
+  if (path.length > 1) {
+    mctx.save();
+    mctx.translate(-sourceX * zoom, -sourceY * zoom);
+    mctx.scale(scale * zoom, scale * zoom);
+    mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
+    mctx.beginPath();
+    mctx.moveTo(path[0].x, path[0].y);
+    for (let i = 1; i < path.length; i++) {
+      mctx.lineTo(path[i].x, path[i].y);
+    }
+    mctx.strokeStyle = 'white';
+    mctx.lineWidth = 2 / zoom;
+    mctx.stroke();
+    mctx.restore();
+  }
+
+  // Draw white crosshair **after** path for visibility
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 1.2;
   mctx.beginPath();
   mctx.moveTo(size / 2, 0);
   mctx.lineTo(size / 2, size);
   mctx.moveTo(0, size / 2);
   mctx.lineTo(size, size / 2);
   mctx.stroke();
-
-// Draw path preview aligned with red cross
-if (path.length > 1) {
-  mctx.save();
-  mctx.translate(-sourceX * zoom, -sourceY * zoom);
-  mctx.scale(scale * zoom, scale * zoom);
-  mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
-  mctx.beginPath();
-  mctx.moveTo(path[0].x, path[0].y);
-  for (let i = 1; i < path.length; i++) {
-    mctx.lineTo(path[i].x, path[i].y);
-  }
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 2 / zoom;
-  mctx.stroke();
-  mctx.restore();
+}
 }
 
-}
 
 
 upload.addEventListener('change', e => {
