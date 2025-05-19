@@ -202,7 +202,7 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
+      <p>© Upper Extremity Team, University Hospital of Bern v1.31.1</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -411,25 +411,18 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 1.25; // Magnification level
+  const zoom = 1.25;
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-  // Get canvas position
   const canvasRect = canvas.getBoundingClientRect();
 
-  // Position magnifier above the canvas, centered horizontally over the touch/mouse point
-const clientX = x * scale + panX;
-const clientY = y * scale + panY;
-const magnifierLeft = clientX / window.devicePixelRatio - magnifier.width / 2;
-const magnifierTop = clientY / window.devicePixelRatio - magnifier.height - 20; // 20px above finger
+  // ⬇️ Always center horizontally, position above canvas
+  const left = (window.innerWidth - magnifier.width) / 2;
+  const top = canvasRect.top - magnifier.height - 12; // 12px spacing above canvas
 
-const left = Math.max(8, Math.min(window.innerWidth - magnifier.width - 8, magnifierLeft));
-const top = Math.max(8, magnifierTop);
-
-
-magnifier.style.left = `${left}px`;
-magnifier.style.top = `${top}px`;
+  magnifier.style.left = `${left}px`;
+  magnifier.style.top = `${top}px`;
   magnifier.style.display = 'block';
 
   const sx = x - halfSize;
@@ -442,6 +435,7 @@ magnifier.style.top = `${top}px`;
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
+  // Draw magnified content
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
@@ -451,34 +445,30 @@ magnifier.style.top = `${top}px`;
   );
   mctx.restore();
 
- if (path.length > 0) {
-  const last = path[path.length - 1];
-  const drawX = (last.x * scale + panX - sourceX) * zoom;
-  const drawY = (last.y * scale + panY - sourceY) * zoom;
-
-  mctx.strokeStyle = 'white';
+  // ➕ Draw crosshair at center of magnifier
+  const center = size / 2;
+  mctx.strokeStyle = 'black';
+  mctx.lineWidth = 1;
   mctx.beginPath();
-  mctx.moveTo(drawX, 0);
-  mctx.lineTo(drawX, size);
-  mctx.moveTo(0, drawY);
-  mctx.lineTo(size, drawY);
+  mctx.moveTo(center, 0);
+  mctx.lineTo(center, size);
+  mctx.moveTo(0, center);
+  mctx.lineTo(size, center);
   mctx.stroke();
-}
 
-
-  // Draw current path preview in magnifier
-if (path.length > 1) {
-  mctx.save();
-  mctx.beginPath();
-  mctx.moveTo((path[0].x * scale + panX - sourceX) * zoom, (path[0].y * scale + panY - sourceY) * zoom);
-  for (let i = 1; i < path.length; i++) {
-    mctx.lineTo((path[i].x * scale + panX - sourceX) * zoom, (path[i].y * scale + panY - sourceY) * zoom);
+  // Optionally show a preview of the current path
+  if (path.length > 1) {
+    mctx.save();
+    mctx.beginPath();
+    mctx.moveTo((path[0].x * scale + panX - sourceX) * zoom, (path[0].y * scale + panY - sourceY) * zoom);
+    for (let i = 1; i < path.length; i++) {
+      mctx.lineTo((path[i].x * scale + panX - sourceX) * zoom, (path[i].y * scale + panY - sourceY) * zoom);
+    }
+    mctx.strokeStyle = '#00aaff';
+    mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4);
+    mctx.stroke();
+    mctx.restore();
   }
-  mctx.strokeStyle = '#00aaff'; // consistent with main canvas
-  mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4); // same thickness
-  mctx.stroke();
-  mctx.restore();
-}
 }
 
 upload.addEventListener('change', e => {
@@ -706,7 +696,7 @@ if (isFreeDrawing) {
   drawEverything();
 
   // Show magnifier
-  updateMagnifier(drawX, drawY);
+  updateMagnifier(pos.x, pos.y);
 }
 
 }, { passive: false });
