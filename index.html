@@ -163,6 +163,27 @@ html, body {
   }
 }
 
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.4em;
+    margin-top: 10px;
+  }
+
+  footer {
+    font-size: 0.75em;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.2em;
+  }
+
+  footer {
+    font-size: 0.7em;
+  }
+}
   </style>
 </head>
 <body>
@@ -215,7 +236,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.31.1)
+    © Upper Extremity Team, University Hospital of Bern (v1.31)
   </footer>
 
 <canvas id="magnifier" width="120" height="120" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
@@ -426,61 +447,44 @@ function updateMagnifier(x, y) {
 
   const zoom = 1.5;
   const size = magnifier.width;
-  const halfSize = size / (2 * zoom);
+  const halfSize = size / 2;
 
   const canvasRect = canvas.getBoundingClientRect();
   magnifier.style.display = 'block';
-  magnifier.style.left = `${(window.innerWidth - magnifier.offsetWidth) / 2}px`;
-  magnifier.style.top = `${canvasRect.top - magnifier.offsetHeight}px`;
+  magnifier.style.left = `${(window.innerWidth - size) / 2}px`;
+  magnifier.style.top = `${canvasRect.top}px`;
 
-  const sx = x - halfSize;
-  const sy = y - halfSize;
-  const sourceX = sx * scale + panX;
-  const sourceY = sy * scale + panY;
+  // Convert logical (image) coordinates to canvas pixel coordinates
+  const sourceX = x * scale + panX;
+  const sourceY = y * scale + panY;
   const sourceSize = size / zoom;
+
+  // Define draw region in source canvas (centered at sourceX/Y)
+  const sx = sourceX - sourceSize / 2;
+  const sy = sourceY - sourceSize / 2;
 
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
-  // Draw zoomed background image
+  // Draw zoomed-in portion of canvas
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
     canvas,
-    sourceX, sourceY, sourceSize, sourceSize,
+    sx, sy, sourceSize, sourceSize,
     0, 0, sourceSize, sourceSize
   );
   mctx.restore();
 
-  // Draw red or white crosshair
-  const crossColor = 'white'; // Change to 'red' if needed
-  mctx.strokeStyle = crossColor;
+  // Draw centered crosshair
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 1;
   mctx.beginPath();
-  mctx.moveTo(size / 2, 0);
-  mctx.lineTo(size / 2, size);
-  mctx.moveTo(0, size / 2);
-  mctx.lineTo(size, size / 2);
+  mctx.moveTo(halfSize, 0);
+  mctx.lineTo(halfSize, size);
+  mctx.moveTo(0, halfSize);
+  mctx.lineTo(size, halfSize);
   mctx.stroke();
-
-  // Draw blue path over magnified view
-  // Draw blue path over magnified view
-if (path.length > 1) {
-  mctx.save();
-
-  // Apply correct transform: scale and translate in one step
-  mctx.setTransform(scale * zoom, 0, 0, scale * zoom, -sourceX * scale * zoom, -sourceY * scale * zoom);
-
-  mctx.beginPath();
-  mctx.moveTo(path[0].x, path[0].y);
-  for (let i = 1; i < path.length; i++) {
-    mctx.lineTo(path[i].x, path[i].y);
-  }
-  mctx.strokeStyle = '#00aaff';
-  mctx.lineWidth = 2 / zoom;
-  mctx.stroke();
-
-  mctx.restore();
-}
 }
 
 upload.addEventListener('change', e => {
@@ -613,8 +617,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    drawX += -200 / scale;  // 40px left of finger
-    drawY += -2000 / scale;  // 40px above finger (optional)
+    drawX += -40 / scale;  // 40px left of finger
+    drawY += -40 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
