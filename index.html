@@ -200,8 +200,10 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.28)
+    © Upper Extremity Team, University Hospital of Bern (v1.29)
   </footer>
+
+<canvas id="magnifier" width="150" height="150" style="position: absolute; top: 10px; left: 10px; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -398,17 +400,24 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-  const sx = (x - halfSize) * scale;
-  const sy = (y - halfSize) * scale;
+  const sx = (x - halfSize);
+  const sy = (y - halfSize);
 
-  // Clear and draw
+  // Convert canvas coordinates to image space
+  const sourceX = sx * scale + panX;
+  const sourceY = sy * scale + panY;
+  const sourceSize = size / zoom;
+
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
   mctx.save();
   mctx.scale(zoom, zoom);
-  mctx.translate(-x + halfSize, -y + halfSize);
-  mctx.drawImage(canvas, 0, 0);
+  mctx.drawImage(
+    canvas,
+    sourceX, sourceY, sourceSize, sourceSize, // source (from canvas)
+    0, 0, sourceSize, sourceSize              // destination (on magnifier)
+  );
   mctx.restore();
 
   // Draw crosshair
@@ -420,7 +429,6 @@ function updateMagnifier(x, y) {
   mctx.lineTo(size, size / 2);
   mctx.stroke();
 }
-
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -871,7 +879,7 @@ document.getElementById('resetAll').addEventListener('click', () => {
   drawEverything();
 });
 </script>
-<canvas id="magnifier" width="150" height="150" style="position: absolute; top: 10px; left: 10px; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
+
 
 </body>
 </html>
