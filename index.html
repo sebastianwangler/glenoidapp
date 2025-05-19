@@ -117,6 +117,7 @@ html, body {
     #zoomSlider {
       margin-top: 10px;
       margin-bottom: 20px;
+      cursor: pointer;
     }
     @media (max-width: 600px) {
       canvas {
@@ -133,23 +134,23 @@ html, body {
     touch-action: pan-x;
   }
 
-  #zoomSlider::-webkit-slider-thumb {
+ #zoomSlider::-webkit-slider-thumb {
+    cursor: pointer;
     appearance: none;
     -webkit-appearance: none;
     height: 32px;
     width: 32px;
     background: #333;
     border-radius: 50%;
-    cursor: pointer;
   }
 
   #zoomSlider::-moz-range-thumb {
+    cursor: pointer;
     height: 32px;
     width: 32px;
     background: #333;
     border-radius: 50%;
-    cursor: pointer;
-  }
+ } 
 }
   </style>
 </head>
@@ -176,13 +177,14 @@ html, body {
 </div>
 
 
-<div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 20px; line-height: 1;">
-  <span style="font-size: 1.5em; display: flex; align-items: center;">−</span>
+<div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 20px; line-height: 1;">
+  <span id="zoomOut" style="font-size: 1.5em; cursor: pointer; user-select: none;">−</span>
   <input type="range" id="zoomSlider"
          min="0.5" max="3" step="0.01" value="1"
          style="width: 100%; max-width: 300px; height: 4px; margin: 0; padding: 0; vertical-align: middle;">
-  <span style="font-size: 1.5em; display: flex; align-items: center;">+</span>
+  <span id="zoomIn" style="font-size: 1.5em; cursor: pointer; user-select: none;">+</span>
 </div>
+
 
   <div id="downloadArea" style="margin-top: 10px"></div>
   <p id="instruction">Upload an image to begin.</p>
@@ -307,8 +309,6 @@ const downloadArea = document.getElementById('downloadArea');
 const instruction = document.getElementById('instruction');
 const result = document.getElementById('result');
 const zoomSlider = document.getElementById('zoomSlider');
-
-
 let image = null;
 let scale = 1, panX = 0, panY = 0;
 let isCircleSet = false, isCircleLocked = false;
@@ -320,24 +320,40 @@ let circle = { x: 400, y: 300, radius: 100, color: 'blue' };
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let isTouchPanning = false;
-let baseScale = 1; // zoom baseline, defined at image load
+let baseScale = 0;
+
+function updateZoomFromFactor(zoomFactor) {
+  const oldScale = scale;
+  scale = baseScale * zoomFactor;
+
+  const centerX = (canvas.width / 2 - panX) / oldScale;
+  const centerY = (canvas.height / 2 - panY) / oldScale;
+  panX = canvas.width / 2 - centerX * scale;
+  panY = canvas.height / 2 - centerY * scale;
+
+  zoomSlider.value = zoomFactor.toFixed(2);
+  drawEverything(tempPath.length > 0);
+}
 
 
 zoomSlider.addEventListener('input', e => {
-  const oldScale = scale;
-const zoomFactor = parseFloat(e.target.value);
-scale = baseScale * zoomFactor;
+  if (!image || baseScale === 0) return;
+  const zoomFactor = parseFloat(e.target.value);
+  updateZoomFromFactor(zoomFactor);
+});
 
- 
+document.getElementById('zoomIn').addEventListener('click', () => {
+  if (!image || baseScale === 0) return;
+  let currentZoomFactor = scale / baseScale;
+  let newZoom = Math.min(currentZoomFactor + 0.1, parseFloat(zoomSlider.max));
+  updateZoomFromFactor(newZoom);
+});
 
-
- const centerX = (canvas.width / 2 - panX) / oldScale;
-const centerY = (canvas.height / 2 - panY) / oldScale;
-panX = canvas.width / 2 - centerX * scale;
-panY = canvas.height / 2 - centerY * scale;
-
-
-  drawEverything(tempPath.length > 0);
+document.getElementById('zoomOut').addEventListener('click', () => {
+  if (!image || baseScale === 0) return;
+  let currentZoomFactor = scale / baseScale;
+  let newZoom = Math.max(currentZoomFactor - 0.1, parseFloat(zoomSlider.min));
+  updateZoomFromFactor(newZoom);
 });
 
 function drawEverything(highlight = false) {
@@ -361,7 +377,7 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
     ctx.moveTo(tempPath[0].x, tempPath[0].y);
     for (let p of tempPath) ctx.lineTo(p.x, p.y);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(0,0,255,0.3)';
+    ctx.fillStyle = 'rgba(0,170,255,0.3)';
     ctx.fill();
 
     ctx.restore(); // Remove the clip
@@ -382,8 +398,8 @@ if (path.length > 1 && !highlight) {  // <-- only draw original path if not high
   for (let i = 1; i < path.length; i++) {
     ctx.lineTo(path[i].x, path[i].y);
   }
-  ctx.strokeStyle = 'blue';
-  ctx.lineWidth = (window.innerWidth < 768 ? 4 : 2) / scale;
+  ctx.strokeStyle = '#00aaff';
+  ctx.lineWidth = (window.innerWidth < 768 ? 6 : 4) / scale;
   ctx.stroke();
 }
 
@@ -402,9 +418,11 @@ function updateMagnifier(x, y) {
   const halfSize = size / (2 * zoom);
 
 // Place magnifier centered above the canvas
+// Place magnifier centered on screen and above the canvas
 const canvasRect = canvas.getBoundingClientRect();
-magnifier.style.left = `${canvasRect.left + (canvasRect.width - size / window.devicePixelRatio) / 2}px`;
-magnifier.style.top = `${canvasRect.top - size / window.devicePixelRatio - 10}px`;
+magnifier.style.left = `${(window.innerWidth - magnifier.width / window.devicePixelRatio) / 2}px`;
+magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelRatio - 16}px`;
+
 
   const sx = (x - halfSize);
   const sy = (y - halfSize);
@@ -434,21 +452,23 @@ magnifier.style.top = `${canvasRect.top - size / window.devicePixelRatio - 10}px
   mctx.lineTo(size, size / 2);
   mctx.stroke();
 
-  // Draw path preview inside magnifier
-  if (path.length > 1) {
-    mctx.save();
-    mctx.scale(zoom, zoom);
-    mctx.translate(-sourceX, -sourceY);
-    mctx.beginPath();
-    mctx.moveTo(path[0].x * scale + panX, path[0].y * scale + panY);
-    for (let i = 1; i < path.length; i++) {
-      mctx.lineTo(path[i].x * scale + panX, path[i].y * scale + panY);
-    }
-    mctx.strokeStyle = 'blue';
-    mctx.lineWidth = 2;
-    mctx.stroke();
-    mctx.restore();
+// Draw path preview aligned with red cross
+if (path.length > 1) {
+  mctx.save();
+  mctx.translate(-sourceX * zoom, -sourceY * zoom);
+  mctx.scale(scale * zoom, scale * zoom);
+  mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
+  mctx.beginPath();
+  mctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    mctx.lineTo(path[i].x, path[i].y);
   }
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 2 / zoom;
+  mctx.stroke();
+  mctx.restore();
+}
+
 }
 
 
