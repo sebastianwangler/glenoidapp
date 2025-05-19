@@ -200,10 +200,10 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.29)
+    © Upper Extremity Team, University Hospital of Bern (v1.28)
   </footer>
 
-<canvas id="magnifier" width="150" height="150" style="position: absolute; top: 10px; left: 10px; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
+<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -371,7 +371,7 @@ ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform
     ctx.beginPath();
     ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
     ctx.strokeStyle = circle.color;
-    ctx.lineWidth = 3 / scale;
+    ctx.lineWidth = 6 / scale;
     ctx.stroke();
   }
 
@@ -396,14 +396,18 @@ function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
   magnifier.style.display = 'block';
-  const zoom = 3;
+  const zoom = 2; // <-- reduced from 3 to 2
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
+
+  // Place magnifier at bottom-right of canvas
+  const canvasRect = canvas.getBoundingClientRect();
+  magnifier.style.left = `${canvasRect.right - size / window.devicePixelRatio - 10}px`;
+  magnifier.style.top = `${canvasRect.bottom - size / window.devicePixelRatio - 10}px`;
 
   const sx = (x - halfSize);
   const sy = (y - halfSize);
 
-  // Convert canvas coordinates to image space
   const sourceX = sx * scale + panX;
   const sourceY = sy * scale + panY;
   const sourceSize = size / zoom;
@@ -415,8 +419,8 @@ function updateMagnifier(x, y) {
   mctx.scale(zoom, zoom);
   mctx.drawImage(
     canvas,
-    sourceX, sourceY, sourceSize, sourceSize, // source (from canvas)
-    0, 0, sourceSize, sourceSize              // destination (on magnifier)
+    sourceX, sourceY, sourceSize, sourceSize,
+    0, 0, sourceSize, sourceSize
   );
   mctx.restore();
 
@@ -428,7 +432,24 @@ function updateMagnifier(x, y) {
   mctx.moveTo(0, size / 2);
   mctx.lineTo(size, size / 2);
   mctx.stroke();
+
+  // Draw path preview inside magnifier
+  if (path.length > 1) {
+    mctx.save();
+    mctx.scale(zoom, zoom);
+    mctx.translate(-sourceX, -sourceY);
+    mctx.beginPath();
+    mctx.moveTo(path[0].x * scale + panX, path[0].y * scale + panY);
+    for (let i = 1; i < path.length; i++) {
+      mctx.lineTo(path[i].x * scale + panX, path[i].y * scale + panY);
+    }
+    mctx.strokeStyle = 'blue';
+    mctx.lineWidth = 2;
+    mctx.stroke();
+    mctx.restore();
+  }
 }
+
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
