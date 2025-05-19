@@ -202,7 +202,7 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31.1</p>
+      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -447,7 +447,7 @@ function updateMagnifier(x, y) {
 
   // ➕ Draw crosshair at center of magnifier
   const center = size / 2;
-  mctx.strokeStyle = 'black';
+  mctx.strokeStyle = 'white';
   mctx.lineWidth = 1;
   mctx.beginPath();
   mctx.moveTo(center, 0);
@@ -456,19 +456,24 @@ function updateMagnifier(x, y) {
   mctx.lineTo(size, center);
   mctx.stroke();
 
-  // Optionally show a preview of the current path
-  if (path.length > 1) {
-    mctx.save();
-    mctx.beginPath();
-    mctx.moveTo((path[0].x * scale + panX - sourceX) * zoom, (path[0].y * scale + panY - sourceY) * zoom);
-    for (let i = 1; i < path.length; i++) {
-      mctx.lineTo((path[i].x * scale + panX - sourceX) * zoom, (path[i].y * scale + panY - sourceY) * zoom);
-    }
-    mctx.strokeStyle = '#00aaff';
-    mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4);
-    mctx.stroke();
-    mctx.restore();
+// Optionally show a preview of the current path
+if (path.length > 1) {
+  mctx.save();
+  mctx.beginPath();
+  const startX = ((path[0].x * scale + panX) - sourceX) * zoom;
+  const startY = ((path[0].y * scale + panY) - sourceY) * zoom;
+  mctx.moveTo(startX, startY);
+  for (let i = 1; i < path.length; i++) {
+    const x = ((path[i].x * scale + panX) - sourceX) * zoom;
+    const y = ((path[i].y * scale + panY) - sourceY) * zoom;
+    mctx.lineTo(x, y);
   }
+  mctx.strokeStyle = '#00aaff';
+  mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4);
+  mctx.stroke();
+  mctx.restore();
+}
+
 }
 
 upload.addEventListener('change', e => {
