@@ -202,7 +202,7 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
+      <p>© Upper Extremity Team, University Hospital of Bern v1.31.1</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -415,15 +415,20 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-  const canvasRect = canvas.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
+  const pointerX = x * scale + panX;
+  const pointerY = y * scale + panY;
 
-  // ⬇️ Always center horizontally, position above canvas
-  const left = (window.innerWidth - magnifier.width) / 2;
-  const top = canvasRect.top - magnifier.height - 12; // 12px spacing above canvas
+  const left = canvasRect.left + (pointerX / window.devicePixelRatio) - magnifier.width / 2;
+  const top = canvasRect.top + (pointerY / window.devicePixelRatio) - magnifier.height - 20;
 
-  magnifier.style.left = `${left}px`;
-  magnifier.style.top = `${top}px`;
+  const clampedLeft = Math.max(10, Math.min(left, window.innerWidth - magnifier.width - 10));
+  const clampedTop = Math.max(10, Math.min(top, window.innerHeight - magnifier.height - 10));
+
+  magnifier.style.left = `${clampedLeft}px`;
+  magnifier.style.top = `${clampedTop}px`;
   magnifier.style.display = 'block';
+
 
   const sx = x - halfSize;
   const sy = y - halfSize;
@@ -445,16 +450,24 @@ function updateMagnifier(x, y) {
   );
   mctx.restore();
 
-  // ➕ Draw crosshair at center of magnifier
-  const center = size / 2;
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 1;
-  mctx.beginPath();
-  mctx.moveTo(center, 0);
-  mctx.lineTo(center, size);
-  mctx.moveTo(0, center);
-  mctx.lineTo(size, center);
-  mctx.stroke();
+
+  const pointerX = x * scale + panX;
+const pointerY = y * scale + panY;
+const screenX = pointerX - sourceX;
+const screenY = pointerY - sourceY;
+
+const crossX = screenX * zoom;
+const crossY = screenY * zoom;
+
+mctx.strokeStyle = 'white';
+mctx.lineWidth = 1;
+mctx.beginPath();
+mctx.moveTo(crossX, 0);
+mctx.lineTo(crossX, size);
+mctx.moveTo(0, crossY);
+mctx.lineTo(size, crossY);
+mctx.stroke();
+
 
 // Optionally show a preview of the current path
 if (path.length > 1) {
@@ -701,7 +714,7 @@ if (isFreeDrawing) {
   drawEverything();
 
   // Show magnifier
-  updateMagnifier(pos.x, pos.y);
+  updateMagnifier(drawX, drawY);
 }
 
 }, { passive: false });
