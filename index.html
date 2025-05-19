@@ -202,7 +202,7 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31.1</p>
+      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
@@ -415,9 +415,10 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-    const canvasRect = canvas.getBoundingClientRect();
+  const pointerX = x * scale + panX;
+  const pointerY = y * scale + panY;
 
-
+  const canvasRect = canvas.getBoundingClientRect();
   const left = canvasRect.left + (pointerX / window.devicePixelRatio) - magnifier.width / 2;
   const top = canvasRect.top + (pointerY / window.devicePixelRatio) - magnifier.height - 20;
 
@@ -427,7 +428,6 @@ function updateMagnifier(x, y) {
   magnifier.style.left = `${clampedLeft}px`;
   magnifier.style.top = `${clampedTop}px`;
   magnifier.style.display = 'block';
-
 
   const sx = x - halfSize;
   const sy = y - halfSize;
