@@ -416,8 +416,7 @@ function updateMagnifier(x, y) {
   const halfSize = size / (2 * zoom);
 
     const canvasRect = canvas.getBoundingClientRect();
-  const pointerX = x * scale + panX;
-  const pointerY = y * scale + panY;
+
 
   const left = canvasRect.left + (pointerX / window.devicePixelRatio) - magnifier.width / 2;
   const top = canvasRect.top + (pointerY / window.devicePixelRatio) - magnifier.height - 20;
