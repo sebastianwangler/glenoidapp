@@ -31,11 +31,6 @@ html, body {
   height: 60vh;
   max-width: 800px;
 }
-@media (max-width: 768px) {
-  h1 {
-    font-size: 1.4em;
-  }
-}
 
 /* Narrower canvas on small screens */
 @media (max-width: 768px) {
@@ -202,11 +197,14 @@ html, body {
     <div style="background: white; padding: 20px; max-width: 400px; text-align: center; border-radius: 8px;">
       <h2>Disclaimer</h2>
       <p>This application is intended for research and educational purposes only. It is not a diagnostic tool.</p>
-      <p>© Upper Extremity Team, University Hospital of Bern v1.31</p>
       <p><a href="https://pubmed.ncbi.nlm.nih.gov/39722336/" target="_blank" style="text-decoration: underline; color: blue;">link original publication</a></p>
       <button onclick="document.getElementById('disclaimerModal').style.display='none';" style="margin-top: 10px; padding: 10px 20px;">OK</button>
     </div>
   </div>
+
+  <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
+    © Upper Extremity Team, University Hospital of Bern (v1.30)
+  </footer>
 
 <canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
@@ -359,23 +357,22 @@ document.getElementById('zoomOut').addEventListener('click', () => {
 });
 
 function drawEverything(highlight = false) {
-  // Clear canvas and reset transformation
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Apply transformation AFTER clearing
+  ctx.save();
   ctx.setTransform(scale, 0, 0, scale, panX, panY);
+ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset to default coordinate system
+ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear full canvas
+ctx.setTransform(scale, 0, 0, scale, panX, panY); // Apply your custom transform again
 
-  if (image) {
-    ctx.drawImage(image, 0, 0);
-  }
+  if (image) ctx.drawImage(image, 0, 0);
 
-  if (highlight && tempPath.length > 0) {
+   if (highlight && tempPath.length > 0) {
+    // Clip to the circle
     ctx.save();
     ctx.beginPath();
     ctx.arc(circle.x, circle.y, circle.radius, 0, Math.PI * 2);
     ctx.clip();
 
+    // Draw the fracture fill only inside the circle
     ctx.beginPath();
     ctx.moveTo(tempPath[0].x, tempPath[0].y);
     for (let p of tempPath) ctx.lineTo(p.x, p.y);
@@ -383,8 +380,9 @@ function drawEverything(highlight = false) {
     ctx.fillStyle = 'rgba(0,170,255,0.3)';
     ctx.fill();
 
-    ctx.restore();
+    ctx.restore(); // Remove the clip
   }
+
 
   if (isCircleSet) {
     ctx.beginPath();
@@ -394,16 +392,19 @@ function drawEverything(highlight = false) {
     ctx.stroke();
   }
 
-  if (path.length > 1 && !highlight) {
-    ctx.beginPath();
-    ctx.moveTo(path[0].x, path[0].y);
-    for (let i = 1; i < path.length; i++) {
-      ctx.lineTo(path[i].x, path[i].y);
-    }
-    ctx.strokeStyle = '#00aaff';
-    ctx.lineWidth = (window.innerWidth < 768 ? 6 : 4) / scale;
-    ctx.stroke();
+if (path.length > 1 && !highlight) {  // <-- only draw original path if not highlighting result
+  ctx.beginPath();
+  ctx.moveTo(path[0].x, path[0].y);
+  for (let i = 1; i < path.length; i++) {
+    ctx.lineTo(path[i].x, path[i].y);
   }
+  ctx.strokeStyle = '#00aaff';
+  ctx.lineWidth = (window.innerWidth < 768 ? 6 : 4) / scale;
+  ctx.stroke();
+}
+
+
+  ctx.restore();
 }
 const magnifier = document.getElementById('magnifier');
 const mctx = magnifier.getContext('2d');
@@ -411,27 +412,20 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 1.25;
+  magnifier.style.display = 'block';
+  const zoom = 2; // <-- reduced from 3 to 2
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-    const canvasRect = canvas.getBoundingClientRect();
-  const pointerX = x * scale + panX;
-  const pointerY = y * scale + panY;
-
-  const left = canvasRect.left + (pointerX / window.devicePixelRatio) - magnifier.width / 2;
-  const top = canvasRect.top + (pointerY / window.devicePixelRatio) - magnifier.height - 20;
-
-  const clampedLeft = Math.max(10, Math.min(left, window.innerWidth - magnifier.width - 10));
-  const clampedTop = Math.max(10, Math.min(top, window.innerHeight - magnifier.height - 10));
-
-  magnifier.style.left = ${clampedLeft}px;
-  magnifier.style.top = ${clampedTop}px;
-  magnifier.style.display = 'block';
+// Place magnifier centered above the canvas
+// Place magnifier centered on screen and above the canvas
+const canvasRect = canvas.getBoundingClientRect();
+magnifier.style.left = `${(window.innerWidth - magnifier.width / window.devicePixelRatio) / 2}px`;
+magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelRatio - 16}px`;
 
 
-  const sx = x - halfSize;
-  const sy = y - halfSize;
+  const sx = (x - halfSize);
+  const sy = (y - halfSize);
 
   const sourceX = sx * scale + panX;
   const sourceY = sy * scale + panY;
@@ -440,7 +434,6 @@ function updateMagnifier(x, y) {
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   mctx.clearRect(0, 0, size, size);
 
-  // Draw magnified content
   mctx.save();
   mctx.scale(zoom, zoom);
   mctx.drawImage(
@@ -450,36 +443,34 @@ function updateMagnifier(x, y) {
   );
   mctx.restore();
 
-  // ➕ Draw crosshair at center of magnifier
-  const center = size / 2;
-  mctx.strokeStyle = 'white';
-  mctx.lineWidth = 1;
+  // Draw crosshair
+  mctx.strokeStyle = 'red';
   mctx.beginPath();
-  mctx.moveTo(center, 0);
-  mctx.lineTo(center, size);
-  mctx.moveTo(0, center);
-  mctx.lineTo(size, center);
+  mctx.moveTo(size / 2, 0);
+  mctx.lineTo(size / 2, size);
+  mctx.moveTo(0, size / 2);
+  mctx.lineTo(size, size / 2);
   mctx.stroke();
 
-// Optionally show a preview of the current path
+// Draw path preview aligned with red cross
 if (path.length > 1) {
   mctx.save();
+  mctx.translate(-sourceX * zoom, -sourceY * zoom);
+  mctx.scale(scale * zoom, scale * zoom);
+  mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
   mctx.beginPath();
-  const startX = ((path[0].x * scale + panX) - sourceX) * zoom;
-  const startY = ((path[0].y * scale + panY) - sourceY) * zoom;
-  mctx.moveTo(startX, startY);
+  mctx.moveTo(path[0].x, path[0].y);
   for (let i = 1; i < path.length; i++) {
-    const x = ((path[i].x * scale + panX) - sourceX) * zoom;
-    const y = ((path[i].y * scale + panY) - sourceY) * zoom;
-    mctx.lineTo(x, y);
+    mctx.lineTo(path[i].x, path[i].y);
   }
-  mctx.strokeStyle = '#00aaff';
-  mctx.lineWidth = (window.innerWidth < 768 ? 6 : 4);
+  mctx.strokeStyle = 'white';
+  mctx.lineWidth = 2 / zoom;
   mctx.stroke();
   mctx.restore();
 }
 
 }
+
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -706,7 +697,7 @@ if (isFreeDrawing) {
   drawEverything();
 
   // Show magnifier
-  updateMagnifier(pos.x, pos.y);
+  updateMagnifier(drawX, drawY);
 }
 
 }, { passive: false });
@@ -843,11 +834,11 @@ const final = m1.percent <= m2.percent ? m1 : m2;
   tempPath = final.path;
   drawEverything(true);
 
-  result.textContent = Fracture area: ${final.percent.toFixed(1)}% of circle surface.;
+  result.textContent = `Fracture area: ${final.percent.toFixed(1)}% of circle surface.`;
 instruction.textContent = '';
 
   const now = new Date();
-  const dateStr = ${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()};
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
 
   downloadArea.innerHTML = '';
   const btn = document.createElement('button');
@@ -859,15 +850,14 @@ instruction.textContent = '';
 
   const fontSize = Math.max(16, Math.min(36, image.width / 15));
   const lineHeight = fontSize * 1.4;
-ctx.font = ${fontSize}px Arial;
+  ctx.font = `${fontSize}px Arial`;
 
   // Prepare lines of text
   const lines = [
-  Date: ${dateStr},
-  Fracture: ${final.percent.toFixed(1)}%,
-  ID: ${patientIdInput.value}
-];
-
+    `Date: ${dateStr}`,
+    `Fracture: ${final.percent.toFixed(1)}%`,
+    `ID: ${patientIdInput.value}`
+  ];
 
   // Calculate the widest text line
   const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
@@ -931,6 +921,7 @@ document.getElementById('resetAll').addEventListener('click', () => {
   drawEverything();
 });
 </script>
+
 
 </body>
 </html>
