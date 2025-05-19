@@ -411,17 +411,16 @@ const mctx = magnifier.getContext('2d');
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
-  const zoom = 1.25; // Magnification level
+  const zoom = 1.5; // Magnification level
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
   // Get canvas position
   const canvasRect = canvas.getBoundingClientRect();
 
- // Center magnifier horizontally over canvas
-const magnifierLeft = canvasRect.left + (canvasRect.width / 2) - (magnifier.width / 2);
-// Place it directly above the canvas
-const magnifierTop = canvasRect.top - magnifier.height - 8; // Adjust this "8" as needed for padding
+  // Position magnifier above the canvas, centered horizontally over the touch/mouse point
+ const magnifierLeft = canvasRect.left + (canvasRect.width - magnifier.width) / 2;
+const magnifierTop = canvasRect.top - magnifier.height - 12;
 
 
   // Ensure it doesn’t go off-screen (optional)
@@ -605,8 +604,8 @@ canvas.addEventListener('mousemove', e => {
   let drawY = pos.y;
 
   if (window.innerWidth < 768) {
-    drawX += -40 / scale;  // 40px left of finger
-    drawY += -40 / scale;  // 40px above finger (optional)
+    drawX += -200 / scale;  // 40px left of finger
+    drawY += -2000 / scale;  // 40px above finger (optional)
   }
 
   path.push({ x: drawX, y: drawY });
@@ -691,6 +690,9 @@ if (isFreeDrawing) {
   let drawX = pos.x;
   let drawY = pos.y;
 
+  if (window.innerWidth < 768) {
+    drawX += -40 / scale;
+    drawY += -40 / scale;
   }
 
   path.push({ x: drawX, y: drawY });
