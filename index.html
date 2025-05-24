@@ -215,7 +215,7 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.32.1)
+    © Upper Extremity Team, University Hospital of Bern (v1.32)
   </footer>
 
 <canvas id="magnifier"
@@ -430,15 +430,25 @@ if (path.length > 1 && !highlight) {  // <-- only draw original path if not high
   ctx.restore();
 }
 const magnifier = document.getElementById('magnifier');
+// Match magnifier canvas with devicePixelRatio
 const mctx = magnifier.getContext('2d');
+const dpr = window.devicePixelRatio || 1;
+magnifier.width = 150 * dpr;
+magnifier.height = 150 * dpr;
+magnifier.style.width = '75px';
+magnifier.style.height = '75px';
+mctx.scale(dpr, dpr);
+
 
 function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
   magnifier.style.display = 'block';
-  const zoom = 1.25; // <-- reduced from 3 to 2
-  const size = magnifier.width;
-  const halfSize = size / (2 * zoom);
+const zoom = 1.25;
+const dpr = window.devicePixelRatio || 1;
+const size = magnifier.width / dpr;
+const halfSize = size / (2 * zoom);
+
 
 
 const magnifierWidth = magnifier.width / window.devicePixelRatio;
@@ -462,7 +472,8 @@ magnifier.style.top = `${canvasRect.top - magnifierHeight - 16}px`;
   const sourceSize = size / zoom;
 
   mctx.setTransform(1, 0, 0, 1, 0, 0);
-  mctx.clearRect(0, 0, size, size);
+mctx.clearRect(0, 0, magnifier.width, magnifier.height);
+
 
   mctx.save();
   mctx.scale(zoom, zoom);
