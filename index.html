@@ -161,6 +161,9 @@ html, body {
     border-radius: 50%;
  } 
 }
+#magnifier {
+  image-rendering: pixelated;
+}
   </style>
 </head>
 <body>
@@ -212,10 +215,20 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.32)
+    © Upper Extremity Team, University Hospital of Bern (v1.32.1)
   </footer>
 
-<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white; width: 75px; height: 75px;"></canvas>
+<canvas id="magnifier"
+  width="150" height="150"
+  style="position: absolute;
+         width: 75px;
+         height: 75px;
+         border: 2px solid #000;
+         display: none;
+         z-index: 9999;
+         background: white;
+         box-sizing: content-box;"></canvas>
+
 
 
 <script>
@@ -423,7 +436,7 @@ function updateMagnifier(x, y) {
   if (!image || window.innerWidth >= 768) return;
 
   magnifier.style.display = 'block';
-  const zoom = 2; // <-- reduced from 3 to 2
+  const zoom = 1.25; // <-- reduced from 3 to 2
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
