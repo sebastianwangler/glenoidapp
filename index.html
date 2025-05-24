@@ -8,11 +8,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <link rel="icon" type="image/png" href="favicon.png" />
-
+<link rel="icon" type="image/png" href="favicon.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 
-  <title>ShoulderApp - Circle Area Measurement</title>
+
+  <title>GlenoidApp</title>
   <style>
 html, body {
   touch-action: manipulation;
@@ -211,10 +212,11 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.30)
+    © Upper Extremity Team, University Hospital of Bern (v1.32)
   </footer>
 
-<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
+<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white; width: 75px; height: 75px;"></canvas>
+
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -426,12 +428,16 @@ function updateMagnifier(x, y) {
   const halfSize = size / (2 * zoom);
 
 
-const canvasRect = canvas.getBoundingClientRect();
 const magnifierWidth = magnifier.width / window.devicePixelRatio;
 const magnifierHeight = magnifier.height / window.devicePixelRatio;
 
-magnifier.style.left = `${canvasRect.left + (canvasRect.width - magnifierWidth) / 2}px`;
+// Center horizontally on the screen (not canvas)
+magnifier.style.left = `${(window.innerWidth - magnifierWidth) / 2}px`;
+
+// Position just above the canvas
+const canvasRect = canvas.getBoundingClientRect();
 magnifier.style.top = `${canvasRect.top - magnifierHeight - 16}px`;
+
 
 
 
