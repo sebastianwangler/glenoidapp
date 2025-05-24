@@ -417,11 +417,14 @@ function updateMagnifier(x, y) {
   const size = magnifier.width;
   const halfSize = size / (2 * zoom);
 
-// Place magnifier centered above the canvas
-// Place magnifier centered on screen and above the canvas
+
 const canvasRect = canvas.getBoundingClientRect();
-magnifier.style.left = `${(window.innerWidth - magnifier.width / window.devicePixelRatio) / 2}px`;
-magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelRatio - 16}px`;
+const magnifierWidth = magnifier.width / window.devicePixelRatio;
+const magnifierHeight = magnifier.height / window.devicePixelRatio;
+
+magnifier.style.left = `${(window.innerWidth - magnifierWidth) / 2}px`;
+magnifier.style.top = `${canvasRect.top - magnifierHeight - 16}px`; // 16px spacing above canvas
+
 
 
   const sx = (x - halfSize);
@@ -444,7 +447,7 @@ magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelR
   mctx.restore();
 
   // Draw crosshair
-  mctx.strokeStyle = 'red';
+  mctx.strokeStyle = 'white';
   mctx.beginPath();
   mctx.moveTo(size / 2, 0);
   mctx.lineTo(size / 2, size);
@@ -455,22 +458,24 @@ magnifier.style.top = `${canvasRect.top - magnifier.height / window.devicePixelR
 // Draw path preview aligned with red cross
 if (path.length > 1) {
   mctx.save();
-  mctx.translate(-sourceX * zoom, -sourceY * zoom);
-  mctx.scale(scale * zoom, scale * zoom);
-  mctx.translate(panX / (scale * zoom), panY / (scale * zoom));
+ mctx.scale(zoom, zoom);
+mctx.translate(
+  (panX - sourceX * scale) / (scale),
+  (panY - sourceY * scale) / (scale)
+);
+
   mctx.beginPath();
   mctx.moveTo(path[0].x, path[0].y);
   for (let i = 1; i < path.length; i++) {
     mctx.lineTo(path[i].x, path[i].y);
   }
-  mctx.strokeStyle = 'white';
+  mctx.strokeStyle = '#00aaff';
   mctx.lineWidth = 2 / zoom;
   mctx.stroke();
   mctx.restore();
-}
 
 }
-
+}
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
