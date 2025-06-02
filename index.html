@@ -3,17 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
- <!-- Apple-specific mobile web app settings -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-<link rel="icon" type="image/png" href="favicon.png" />
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-
-
-  <title>GlenoidApp</title>
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <title>ShoulderApp - Circle Area Measurement</title>
   <style>
 html, body {
   touch-action: manipulation;
@@ -161,9 +152,6 @@ html, body {
     border-radius: 50%;
  } 
 }
-#magnifier {
-  image-rendering: pixelated;
-}
   </style>
 </head>
 <body>
@@ -215,21 +203,10 @@ html, body {
   </div>
 
   <footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #666;">
-    © Upper Extremity Team, University Hospital of Bern (v1.32)
+    © Upper Extremity Team, University Hospital of Bern (v2)
   </footer>
 
-<canvas id="magnifier"
-  width="150" height="150"
-  style="position: absolute;
-         width: 75px;
-         height: 75px;
-         border: 2px solid #000;
-         display: none;
-         z-index: 9999;
-         background: white;
-         box-sizing: content-box;"></canvas>
-
-
+<canvas id="magnifier" width="150" height="150" style="position: absolute; border: 2px solid #000; display: none; z-index: 9999; background: white;"></canvas>
 
 <script>
 window.addEventListener('DOMContentLoaded', () => {
@@ -304,6 +281,15 @@ zoomSlider.value = prevZoomFactor.toFixed(2); // update slider UI
   panY = (canvas.height - image.height * scale) / 2;
 
   drawEverything(tempPath.length > 0); // Redraw with updated settings
+
+  // If magnifier is visible, reposition or hide it based on new size
+  if (magnifier.style.display === 'block') {
+    if (image && window.innerWidth < 768) {
+      positionMagnifier();
+    } else {
+      magnifier.style.display = 'none';
+    }
+  }
 });
 
 const canvas = document.getElementById('canvas');
@@ -430,87 +416,105 @@ if (path.length > 1 && !highlight) {  // <-- only draw original path if not high
   ctx.restore();
 }
 const magnifier = document.getElementById('magnifier');
-// Match magnifier canvas with devicePixelRatio
 const mctx = magnifier.getContext('2d');
-const dpr = window.devicePixelRatio || 1;
-magnifier.width = 150 * dpr;
-magnifier.height = 150 * dpr;
-magnifier.style.width = '75px';
-magnifier.style.height = '75px';
-mctx.scale(dpr, dpr);
 
+// Function to solely position the magnifier element
+function positionMagnifier() {
+  // This function assumes magnifier.style.display is already 'block'
+  // and image exists and screen is mobile.
+  // The caller (updateMagnifier or scroll/resize listener) should ensure these.
+  const magElementRenderedWidth = magnifier.offsetWidth;
+  const magElementRenderedHeight = magnifier.offsetHeight;
+  const canvasRect = canvas.getBoundingClientRect();
 
-function updateMagnifier(x, y) {
-  if (!image || window.innerWidth >= 768) return;
+  magnifier.style.left = `${(window.innerWidth - magElementRenderedWidth) / 2}px`;
+  // Lift by 1px to create a small visual separation and reduce perceived overlap
+  magnifier.style.top = `${canvasRect.top + window.pageYOffset - magElementRenderedHeight - 1}px`;
+}
 
-  magnifier.style.display = 'block';
-const zoom = 1.25;
-const dpr = window.devicePixelRatio || 1;
-const size = magnifier.width / dpr;
-const halfSize = size / (2 * zoom);
+// Function to update magnifier content AND position
+function updateMagnifier(x, y) { // x, y are image coordinates for the center of the magnified view
+  if (!image || window.innerWidth >= 768) {
+    magnifier.style.display = 'none'; // Explicitly hide if conditions not met
+    return;
+  }
 
+  if (magnifier.style.display !== 'block') {
+    magnifier.style.display = 'block'; // Show it if it was hidden
+  }
+  
+  positionMagnifier(); // Set its position
 
-
-const magnifierWidth = magnifier.width / window.devicePixelRatio;
-const magnifierHeight = magnifier.height / window.devicePixelRatio;
-
-// Center horizontally on the screen (not canvas)
-magnifier.style.left = `${(window.innerWidth - magnifierWidth) / 2}px`;
-
-// Position just above the canvas
-const canvasRect = canvas.getBoundingClientRect();
-magnifier.style.top = `${canvasRect.top - magnifierHeight - 16}px`;
-
-
-
-
-  const sx = (x - halfSize);
-  const sy = (y - halfSize);
-
-  const sourceX = sx * scale + panX;
-  const sourceY = sy * scale + panY;
-  const sourceSize = size / zoom;
+  // Now draw the content based on x, y
+  const magnifierZoom = 0.4; // Zoom set to 0.75x (zoomed out to show a wider area)
+  const magCanvasWidth = magnifier.width;  // Canvas attribute for drawing surface width
+  const magCanvasHeight = magnifier.height; // Canvas attribute for drawing surface height
 
   mctx.setTransform(1, 0, 0, 1, 0, 0);
-mctx.clearRect(0, 0, magnifier.width, magnifier.height);
+  mctx.clearRect(0, 0, magCanvasWidth, magCanvasHeight);
 
+  // Calculate the region in image space to be shown in the magnifier
+  // x, y are the center of the desired magnified view, in image space coordinates
+  const imgSpaceSrcWidth = magCanvasWidth / magnifierZoom;
+  const imgSpaceSrcHeight = magCanvasHeight / magnifierZoom;
+
+  const imgSpaceTopLeftX = x - (imgSpaceSrcWidth / 2);
+  const imgSpaceTopLeftY = y - (imgSpaceSrcHeight / 2);
+
+  // Convert these image space coordinates to the main canvas's backing store pixel coordinates
+  const backingStoreSrcX = imgSpaceTopLeftX * scale + panX;
+  const backingStoreSrcY = imgSpaceTopLeftY * scale + panY;
+  const backingStoreSrcWidth = imgSpaceSrcWidth * scale;
+  const backingStoreSrcHeight = imgSpaceSrcHeight * scale;
 
   mctx.save();
-  mctx.scale(zoom, zoom);
   mctx.drawImage(
     canvas,
-    sourceX, sourceY, sourceSize, sourceSize,
-    0, 0, sourceSize, sourceSize
+    backingStoreSrcX, backingStoreSrcY,       // Source rectangle top-left on main canvas backing store
+    backingStoreSrcWidth, backingStoreSrcHeight, // Source rectangle dimensions on main canvas backing store
+    0, 0,                                     // Destination top-left on magnifier canvas
+    magCanvasWidth, magCanvasHeight           // Destination dimensions (fill magnifier canvas)
   );
   mctx.restore();
 
   // Draw crosshair
   mctx.strokeStyle = 'white';
   mctx.beginPath();
-  mctx.moveTo(size / 2, 0);
-  mctx.lineTo(size / 2, size);
-  mctx.moveTo(0, size / 2);
-  mctx.lineTo(size, size / 2);
+  mctx.moveTo(magCanvasWidth / 2, 0);
+  mctx.lineTo(magCanvasWidth / 2, magCanvasHeight);
+  mctx.moveTo(0, magCanvasHeight / 2);
+  mctx.lineTo(magCanvasWidth, magCanvasHeight / 2);
   mctx.stroke();
 
 // Draw path preview aligned with red cross
 if (path.length > 1) {
   mctx.save();
-  mctx.scale(zoom, zoom);
-  mctx.translate(-sx, -sy);
+  // Transform mctx so that drawing path coordinates (which are in image space)
+  // maps them correctly onto the magnifier canvas.
+  mctx.scale(magnifierZoom, magnifierZoom);
+  mctx.translate(-imgSpaceTopLeftX, -imgSpaceTopLeftY);
 
   mctx.beginPath();
   mctx.moveTo(path[0].x, path[0].y);
   for (let i = 1; i < path.length; i++) {
     mctx.lineTo(path[i].x, path[i].y);
   }
-  mctx.strokeStyle = '#00aaff';
-  mctx.lineWidth = 2 / zoom;
+  mctx.strokeStyle = '#00aaff'; // Changed path color to blue
+  mctx.lineWidth = 1.0 / magnifierZoom; // Made the line thinner
   mctx.stroke();
   mctx.restore();
+}
 
 }
-}
+
+// Add scroll listener to reposition magnifier if it's visible
+window.addEventListener('scroll', () => {
+  // If the magnifier is visible and conditions for it are met, reposition it.
+  if (magnifier.style.display === 'block' && image && window.innerWidth < 768) {
+    positionMagnifier();
+  }
+}, { passive: true });
+
 
 upload.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -640,11 +644,8 @@ canvas.addEventListener('mousemove', e => {
   if (isFreeDrawing) {
   let drawX = pos.x;
   let drawY = pos.y;
-
-  if (window.innerWidth < 768) {
-    drawX += -200 / scale;  // 40px left of finger
-    drawY += -2000 / scale;  // 40px above finger (optional)
-  }
+  // For mouse drawing, use the exact cursor position.
+  // The large offsets previously here for small screens were likely an error.
 
   path.push({ x: drawX, y: drawY });
   drawEverything();
